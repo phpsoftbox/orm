@@ -17,10 +17,8 @@ final class Post implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'author_id', type: 'int')]
         public int $authorId,
-
         #[ManyToOne(targetEntity: Author::class, joinColumn: 'authorId')]
         public ?Author $author = null,
     ) {
@@ -31,4 +29,3 @@ final class Post implements EntityInterface
         return $this->id;
     }
 }
-

@@ -17,10 +17,8 @@ final class PostWithNestedAuthor implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'author_id', type: 'int')]
         public int $authorId,
-
         #[ManyToOne(targetEntity: AuthorWithCompany::class, joinColumn: 'authorId')]
         public ?AuthorWithCompany $author = null,
     ) {
@@ -31,4 +29,3 @@ final class PostWithNestedAuthor implements EntityInterface
         return $this->id;
     }
 }
-

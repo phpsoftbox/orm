@@ -16,4 +16,3 @@ final class EventEntityListener
         $event->state()->register('name', 'from_listener');
     }
 }
-

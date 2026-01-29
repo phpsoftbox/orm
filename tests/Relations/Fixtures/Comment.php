@@ -16,10 +16,8 @@ final class Comment implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'post_id', type: 'int')]
         public int $postId,
-
         #[Column(type: 'string')]
         public string $body,
     ) {
@@ -30,4 +28,3 @@ final class Comment implements EntityInterface
         return $this->id;
     }
 }
-

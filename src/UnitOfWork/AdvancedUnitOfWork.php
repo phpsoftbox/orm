@@ -11,8 +11,11 @@ use PhpSoftBox\Orm\Contracts\UnitOfWorkInterface;
 use PhpSoftBox\Orm\Identity\EntityKey;
 use Ramsey\Uuid\UuidInterface;
 
+use function array_values;
 use function is_array;
 use function is_object;
+use function ksort;
+use function method_exists;
 use function spl_object_id;
 
 /**
@@ -118,6 +121,7 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
         if ($state === EntityState::New) {
             $this->scheduledInserts[$oid] = $entity;
             unset($this->scheduledUpdates[$oid]);
+
             return;
         }
 
@@ -135,6 +139,7 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
 
         if (isset($this->scheduledInserts[$oid])) {
             unset($this->scheduledInserts[$oid], $this->scheduledUpdates[$oid], $this->scheduledDeletes[$oid], $this->scheduledForceDeletes[$oid]);
+
             return;
         }
 
@@ -142,6 +147,7 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
 
         if ($state === EntityState::New) {
             unset($this->scheduledInserts[$oid], $this->scheduledUpdates[$oid]);
+
             return;
         }
 
@@ -155,6 +161,7 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
 
         if (isset($this->scheduledInserts[$oid])) {
             unset($this->scheduledInserts[$oid], $this->scheduledUpdates[$oid], $this->scheduledDeletes[$oid], $this->scheduledForceDeletes[$oid]);
+
             return;
         }
 
@@ -184,17 +191,17 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
 
     public function clearScheduledOperations(): void
     {
-        $this->scheduledInserts = [];
-        $this->scheduledUpdates = [];
-        $this->scheduledDeletes = [];
+        $this->scheduledInserts      = [];
+        $this->scheduledUpdates      = [];
+        $this->scheduledDeletes      = [];
         $this->scheduledForceDeletes = [];
     }
 
     public function clear(): void
     {
-        $this->states = [];
+        $this->states      = [];
         $this->existsCache = [];
-        $this->snapshots = [];
+        $this->snapshots   = [];
         $this->identityMap->clear();
         $this->clearScheduledOperations();
     }
@@ -223,7 +230,7 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
 
         $exists = $this->existsCache[$existsKey] ?? null;
         if ($exists === null) {
-            $exists = $repository->exists($id);
+            $exists                        = $repository->exists($id);
             $this->existsCache[$existsKey] = $exists;
         }
 
@@ -266,6 +273,7 @@ final class AdvancedUnitOfWork implements UnitOfWorkInterface
             foreach ($value as $k => $v) {
                 $value[$k] = $this->normalizeValue($v);
             }
+
             return $value;
         }
 

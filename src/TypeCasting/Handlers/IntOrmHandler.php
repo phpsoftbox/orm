@@ -6,6 +6,9 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 
 use InvalidArgumentException;
 
+use function is_int;
+use function is_numeric;
+
 final class IntOrmHandler extends AbstractOrmTypeHandler
 {
     public function supports(string $type): bool

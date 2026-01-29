@@ -20,9 +20,8 @@ final readonly class EnumCastOptions implements TypeCastingOptionsInterface
     public function toArray(): array
     {
         return [
-            'enum_class' => $this->enumClass,
+            'enum_class'      => $this->enumClass,
             'null_on_invalid' => $this->nullOnInvalid,
         ];
     }
 }
-

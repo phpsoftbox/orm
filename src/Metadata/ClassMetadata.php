@@ -50,6 +50,7 @@ final readonly class ClassMetadata
                 $result[] = $col;
             }
         }
+
         return $result;
     }
 
@@ -64,6 +65,7 @@ final readonly class ClassMetadata
                 $result[] = $col;
             }
         }
+
         return $result;
     }
 }

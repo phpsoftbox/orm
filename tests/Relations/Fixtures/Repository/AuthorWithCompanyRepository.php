@@ -36,14 +36,17 @@ final class AuthorWithCompanyRepository extends AbstractEntityRepository
     {
         /** @var AuthorWithCompany $entity */
         return [
-            'id' => $entity->id,
-            'name' => $entity->name,
+            'id'         => $entity->id,
+            'name'       => $entity->name,
             'company_id' => $entity->companyId,
         ];
     }
 
-    protected function doPersist(EntityInterface $entity): void {}
+    protected function doPersist(EntityInterface $entity): void
+    {
+    }
 
-    protected function doRemove(EntityInterface $entity): void {}
+    protected function doRemove(EntityInterface $entity): void
+    {
+    }
 }
-

@@ -25,15 +25,16 @@ final class AllTypesCastingTest extends TestCase
     public function allTypesAreCasted(): void
     {
         $metadata = new AttributeMetadataProvider();
-        $caster = new DefaultTypeCasterFactory()->create();
+        $caster   = new DefaultTypeCasterFactory()->create();
+
         $mapper = new AutoEntityMapper($metadata, $caster, new TypeCastOptionsManager());
 
         $row = [
             'isActive' => 't',
-            'balance' => '10.5000',
-            'created' => '2026-01-15 12:00:00',
-            'status' => 'active',
-            'ids' => '{1,2,3}',
+            'balance'  => '10.5000',
+            'created'  => '2026-01-15 12:00:00',
+            'status'   => 'active',
+            'ids'      => '{1,2,3}',
         ];
 
         $entity = $mapper->hydrate(AllTypesEntity::class, $row);
@@ -53,4 +54,3 @@ final class AllTypesCastingTest extends TestCase
         self::assertSame('{1,2,3}', $back['ids']);
     }
 }
-

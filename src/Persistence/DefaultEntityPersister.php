@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpSoftBox\Orm\Persistence;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PhpSoftBox\Database\Contracts\ConnectionInterface;
 use PhpSoftBox\Orm\Contracts\EntityInterface;
 use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
@@ -14,6 +15,9 @@ use PhpSoftBox\Orm\Repository\AutoEntityMapper;
 
 use function count;
 use function is_object;
+use function method_exists;
+
+use const DATE_ATOM;
 
 /**
  * Persister по умолчанию.
@@ -57,7 +61,7 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
 
         $id = $entity->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Cannot update entity without id().');
+            throw new InvalidArgumentException('Cannot update entity without id().');
         }
 
         $idValue = is_object($id) && method_exists($id, 'toString') ? $id->toString() : $id;
@@ -88,7 +92,7 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
 
         $id = $entity->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Cannot delete entity without id().');
+            throw new InvalidArgumentException('Cannot delete entity without id().');
         }
 
         $idValue = is_object($id) && method_exists($id, 'toString') ? $id->toString() : $id;
@@ -97,7 +101,7 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
             $this->connection
                 ->query()
                 ->update($meta->table, [
-                    $meta->softDelete->column => (new DateTimeImmutable())->format(DATE_ATOM),
+                    $meta->softDelete->column => new DateTimeImmutable()->format(DATE_ATOM),
                 ])
                 ->where($pk . ' = :__orm_pk', ['__orm_pk' => $idValue])
                 ->execute();
@@ -120,7 +124,7 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
 
         $id = $entity->id();
         if ($id === null) {
-            throw new \InvalidArgumentException('Cannot forceDelete entity without id().');
+            throw new InvalidArgumentException('Cannot forceDelete entity without id().');
         }
 
         $idValue = is_object($id) && method_exists($id, 'toString') ? $id->toString() : $id;
@@ -139,9 +143,9 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
         }
 
         $pkProperty = $meta->pkProperties[0];
-        $pkMeta = $meta->columns[$pkProperty] ?? null;
+        $pkMeta     = $meta->columns[$pkProperty] ?? null;
         if ($pkMeta === null) {
-            throw new \InvalidArgumentException('Primary key property is not mapped as Column: ' . $pkProperty);
+            throw new InvalidArgumentException('Primary key property is not mapped as Column: ' . $pkProperty);
         }
 
         return $pkMeta->column;

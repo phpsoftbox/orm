@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests\Utils;
 
-use PhpSoftBox\Database\Database;
-use PhpSoftBox\Database\Driver\DriversEnum;
 use PDO;
 use PDOException;
+use PhpSoftBox\Database\Database;
+use PhpSoftBox\Database\Driver\DriversEnum;
 use RuntimeException;
 
 /**
@@ -43,13 +43,13 @@ final class IntegrationDatabases
     {
         $dsn = match ($driver) {
             DriversEnum::SQLITE => self::SQLITE_DSN_URL,
-            default => throw new RuntimeException('Only sqlite is supported in ORM tests helper right now.'),
+            default             => throw new RuntimeException('Only sqlite is supported in ORM tests helper right now.'),
         };
 
         return [
             'connections' => [
                 'default' => [
-                    'dsn' => $dsn,
+                    'dsn'     => $dsn,
                     'options' => [
                         PDO::ATTR_TIMEOUT => 2,
                     ],
@@ -58,4 +58,3 @@ final class IntegrationDatabases
         ];
     }
 }
-

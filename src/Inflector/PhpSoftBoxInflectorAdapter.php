@@ -13,7 +13,7 @@ use PhpSoftBox\Orm\Contracts\InflectorInterface;
 final readonly class PhpSoftBoxInflectorAdapter implements InflectorInterface
 {
     public function __construct(
-        private BaseInflectorInterface $inflector
+        private BaseInflectorInterface $inflector,
     ) {
     }
 

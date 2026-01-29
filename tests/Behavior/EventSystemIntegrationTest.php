@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests\Behavior;
 
+use PDO;
 use PhpSoftBox\Database\Connection\Connection;
 use PhpSoftBox\Database\Driver\SqliteDriver;
 use PhpSoftBox\Orm\Behavior\Attributes\EventListener;
@@ -13,7 +14,6 @@ use PhpSoftBox\Orm\Repository\GenericEntityRepository;
 use PhpSoftBox\Orm\Tests\Behavior\Fixtures\EventEntity;
 use PhpSoftBox\Orm\Tests\Behavior\Fixtures\EventEntityListener;
 use PhpSoftBox\Orm\UnitOfWork\InMemoryUnitOfWork;
-use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -31,17 +31,18 @@ final class EventSystemIntegrationTest extends TestCase
     public function hooksAndListenersCanMutateInsertData(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE event_entities (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $dispatcher = new DefaultEventDispatcher([new EventEntityListener()]);

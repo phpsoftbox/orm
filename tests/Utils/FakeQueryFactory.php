@@ -12,7 +12,9 @@ final class FakeQueryFactory
     public function insert(string $table, array $data = []): FakeInsertBuilder
     {
         $b = new FakeInsertBuilder($table, $data);
+
         $this->lastBuilder = $b;
+
         return $b;
     }
 
@@ -20,14 +22,18 @@ final class FakeQueryFactory
     public function update(string $table, array $data = []): FakeUpdateBuilder
     {
         $b = new FakeUpdateBuilder($table, $data);
+
         $this->lastBuilder = $b;
+
         return $b;
     }
 
     public function delete(string $table): FakeDeleteBuilder
     {
         $b = new FakeDeleteBuilder($table);
+
         $this->lastBuilder = $b;
+
         return $b;
     }
 }
@@ -64,8 +70,9 @@ final class FakeUpdateBuilder
     /** @param array<string, mixed> $params */
     public function where(string $sql, array $params = []): self
     {
-        $this->whereSql = $sql;
+        $this->whereSql    = $sql;
         $this->whereParams = $params;
+
         return $this;
     }
 
@@ -90,8 +97,9 @@ final class FakeDeleteBuilder
     /** @param array<string, mixed> $params */
     public function where(string $sql, array $params = []): self
     {
-        $this->whereSql = $sql;
+        $this->whereSql    = $sql;
         $this->whereParams = $params;
+
         return $this;
     }
 

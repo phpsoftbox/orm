@@ -18,9 +18,8 @@ final readonly class PgArrayCastOptions implements TypeCastingOptionsInterface
     public function toArray(): array
     {
         return [
-            'item_type' => $this->itemType,
+            'item_type'                   => $this->itemType,
             'empty_string_as_empty_array' => $this->emptyStringAsEmptyArray,
         ];
     }
 }
-

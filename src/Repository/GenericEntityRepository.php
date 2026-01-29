@@ -10,15 +10,18 @@ use PhpSoftBox\Orm\Collection\EntityCollection;
 use PhpSoftBox\Orm\Contracts\EntityInterface;
 use PhpSoftBox\Orm\Contracts\EntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\IdentifierInterface;
+use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
 use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
 use PhpSoftBox\Orm\Persistence\DefaultEntityPersister;
 use PhpSoftBox\Orm\Persistence\EntityPersisterInterface;
 use PhpSoftBox\Orm\TypeCasting\DefaultTypeCasterFactory;
 use PhpSoftBox\Orm\TypeCasting\Options\TypeCastOptionsManager;
-use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
 use Ramsey\Uuid\UuidInterface;
 use ReflectionException;
+
+use function count;
+use function is_array;
 
 /**
  * Generic entity repository.
@@ -45,7 +48,7 @@ final class GenericEntityRepository implements EntityRepositoryInterface
 
         $this->mapper = new AutoEntityMapper(
             metadata: $this->metadata,
-            typeCaster: (new DefaultTypeCasterFactory())->create(),
+            typeCaster: new DefaultTypeCasterFactory()->create(),
             optionsManager: new TypeCastOptionsManager(),
         );
 
@@ -134,11 +137,11 @@ final class GenericEntityRepository implements EntityRepositoryInterface
 
         /** @var EntityInterface $entity */
         $entity = $this->mapper->hydrate($this->entityClass, $row);
+
         return $entity;
     }
 
     /**
-     * @param int|UuidInterface|array|IdentifierInterface $id
      * @throws ReflectionException
      */
     private function existsInternal(int|UuidInterface|array|IdentifierInterface $id, bool $includeDeleted): bool
@@ -185,7 +188,7 @@ final class GenericEntityRepository implements EntityRepositoryInterface
         $items = [];
         foreach ($rows as $row) {
             /** @var EntityInterface $entity */
-            $entity = $this->mapper->hydrate($this->entityClass, $row);
+            $entity  = $this->mapper->hydrate($this->entityClass, $row);
             $items[] = $entity;
         }
 
@@ -218,7 +221,7 @@ final class GenericEntityRepository implements EntityRepositoryInterface
         }
 
         $pkProperty = $meta->pkProperties[0];
-        $pkMeta = $meta->columns[$pkProperty] ?? null;
+        $pkMeta     = $meta->columns[$pkProperty] ?? null;
         if ($pkMeta === null) {
             throw new InvalidArgumentException('Primary key property is not mapped as Column: ' . $pkProperty);
         }

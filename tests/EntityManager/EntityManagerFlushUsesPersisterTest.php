@@ -8,11 +8,11 @@ use PhpSoftBox\Database\Contracts\ConnectionInterface;
 use PhpSoftBox\Orm\EntityManager;
 use PhpSoftBox\Orm\Persistence\EntityPersisterInterface;
 use PhpSoftBox\Orm\Repository\GenericEntityRepository;
+use PhpSoftBox\Orm\Tests\EntityManager\Fixtures\TestEntity;
 use PhpSoftBox\Orm\UnitOfWork\InMemoryUnitOfWork;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
-use PhpSoftBox\Orm\Tests\EntityManager\Fixtures\TestEntity;
 
 #[CoversClass(EntityManager::class)]
 final class EntityManagerFlushUsesPersisterTest extends TestCase
@@ -40,6 +40,7 @@ final class EntityManagerFlushUsesPersisterTest extends TestCase
         $em->registerRepository(TestEntity::class, new GenericEntityRepository($connection, TestEntity::class));
 
         $entity = new TestEntity(null);
+
         $em->persist($entity);
         $em->flush();
     }

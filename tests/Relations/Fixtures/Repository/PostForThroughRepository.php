@@ -37,9 +37,9 @@ final class PostForThroughRepository extends AbstractEntityRepository
     {
         /** @var PostForThrough $entity */
         return [
-            'id' => $entity->id,
+            'id'        => $entity->id,
             'author_id' => $entity->author_id,
-            'title' => $entity->title,
+            'title'     => $entity->title,
         ];
     }
 

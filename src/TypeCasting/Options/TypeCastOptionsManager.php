@@ -4,12 +4,7 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\TypeCasting\Options;
 
-use PhpSoftBox\Orm\TypeCasting\Options\BoolCastOptions;
-use PhpSoftBox\Orm\TypeCasting\Options\DatetimeCastOptions;
-use PhpSoftBox\Orm\TypeCasting\Options\DecimalCastOptions;
-use PhpSoftBox\Orm\TypeCasting\Options\JsonCastOptions;
-use PhpSoftBox\Orm\TypeCasting\Options\PgArrayCastOptions;
-use PhpSoftBox\Orm\TypeCasting\Options\TypeCastingOptionsInterface;
+use function array_filter;
 
 /**
  * Менеджер опций: позволяет задавать дефолты и резолвить опции по type.
@@ -31,11 +26,15 @@ final class TypeCastOptionsManager
     {
         // Базовые дефолты (можно переопределять через registerDefaults()).
         $this->defaults['datetime'] = new DatetimeCastOptions();
+
         $this->defaults['date'] = new DatetimeCastOptions(formatTo: 'Y-m-d', formatFrom: 'Y-m-d');
+
         $this->defaults['time'] = new DatetimeCastOptions(formatTo: 'H:i:s', formatFrom: 'H:i:s');
+
         $this->defaults['json'] = new JsonCastOptions();
 
         $this->defaults['bool'] = new BoolCastOptions();
+
         $this->defaults['boolean'] = new BoolCastOptions();
 
         $this->defaults['decimal'] = new DecimalCastOptions();
@@ -58,13 +57,13 @@ final class TypeCastOptionsManager
     {
         $base = $this->defaults[$type] ?? null;
 
-        $baseArray = $base?->toArray() ?? [];
+        $baseArray      = $base?->toArray() ?? [];
         $overridesArray = $overrides?->toArray() ?? [];
 
         // overrides выигрывают
         return array_filter(
             [...$baseArray, ...$overridesArray],
-            static fn(mixed $v): bool => $v !== null,
+            static fn (mixed $v): bool => $v !== null,
         );
     }
 }

@@ -39,6 +39,7 @@ final class EntityManagerDirtyCheckingNoChangesTest extends TestCase
         );
 
         $entity = new UserMappedEntity(1, 'John');
+
         $em->registerRepository(UserMappedEntity::class, new StubUserMappedRepository($entity));
 
         $loaded = $em->find(UserMappedEntity::class, 1);
@@ -49,4 +50,3 @@ final class EntityManagerDirtyCheckingNoChangesTest extends TestCase
         $em->flush();
     }
 }
-

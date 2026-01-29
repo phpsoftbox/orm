@@ -33,4 +33,3 @@ final class MutableEntityState
         $this->data[$key] = $value;
     }
 }
-

@@ -23,6 +23,7 @@ final class InMemoryUnitOfWorkSchedulingTest extends TestCase
         $uow = new InMemoryUnitOfWork();
 
         $e = new EntityWithNullableIntId(null);
+
         $uow->markNew($e);
         $uow->schedulePersist($e);
 
@@ -40,6 +41,7 @@ final class InMemoryUnitOfWorkSchedulingTest extends TestCase
         $uow = new InMemoryUnitOfWork();
 
         $e = new EntityWithNullableIntId(null);
+
         $uow->markNew($e);
         $uow->schedulePersist($e);
 
@@ -62,6 +64,7 @@ final class InMemoryUnitOfWorkSchedulingTest extends TestCase
         $uow = new InMemoryUnitOfWork();
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
         $uow->schedulePersist($e);
 
@@ -86,6 +89,7 @@ final class InMemoryUnitOfWorkSchedulingTest extends TestCase
         $uow = new InMemoryUnitOfWork();
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
 
         $uow->markRemoved($e);
@@ -109,6 +113,7 @@ final class InMemoryUnitOfWorkSchedulingTest extends TestCase
         $uow = new InMemoryUnitOfWork();
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
 
         $uow->schedulePersist($e);
@@ -126,6 +131,7 @@ final class InMemoryUnitOfWorkSchedulingTest extends TestCase
         $uow = new InMemoryUnitOfWork();
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
 
         $uow->markRemoved($e);

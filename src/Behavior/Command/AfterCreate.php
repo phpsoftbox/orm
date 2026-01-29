@@ -7,4 +7,3 @@ namespace PhpSoftBox\Orm\Behavior\Command;
 final readonly class AfterCreate extends AbstractEntityCommand
 {
 }
-

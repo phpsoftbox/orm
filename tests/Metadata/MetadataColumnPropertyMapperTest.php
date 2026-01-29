@@ -22,7 +22,9 @@ final class MetadataColumnPropertyMapperTest extends TestCase
     public function columnToPropertyReturnsPropertyName(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $metadata = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
+
         $mapper = new MetadataColumnPropertyMapper($metadata);
 
         self::assertSame('authorId', $mapper->columnToProperty(PostBelongsTo::class, 'author_id'));
@@ -36,7 +38,9 @@ final class MetadataColumnPropertyMapperTest extends TestCase
     public function propertyToColumnReturnsColumnName(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $metadata = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
+
         $mapper = new MetadataColumnPropertyMapper($metadata);
 
         self::assertSame('author_id', $mapper->propertyToColumn(PostBelongsTo::class, 'authorId'));

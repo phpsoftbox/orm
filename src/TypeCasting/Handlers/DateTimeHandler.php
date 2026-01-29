@@ -10,6 +10,8 @@ use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 use Throwable;
 
+use function is_string;
+
 final readonly class DateTimeHandler implements OrmTypeHandlerInterface
 {
     /**
@@ -39,8 +41,8 @@ final readonly class DateTimeHandler implements OrmTypeHandlerInterface
         $type = (string) ($options['type'] ?? 'datetime');
 
         $format = $options['format_to'] ?? match ($type) {
-            'date' => 'Y-m-d',
-            'time' => 'H:i:s',
+            'date'  => 'Y-m-d',
+            'time'  => 'H:i:s',
             default => $this->format,
         };
 
@@ -61,7 +63,7 @@ final readonly class DateTimeHandler implements OrmTypeHandlerInterface
             throw new InvalidArgumentException('Invalid date/time value.');
         }
 
-        $class = $options['dateTimeClass'] ?? $this->dateTimeClass;
+        $class      = $options['dateTimeClass'] ?? $this->dateTimeClass;
         $formatFrom = $options['format_from'] ?? null;
 
         // Если задан format_from, используем createFromFormat.

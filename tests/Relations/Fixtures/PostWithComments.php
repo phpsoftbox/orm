@@ -21,10 +21,8 @@ final class PostWithComments implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $title,
-
         #[HasMany(targetEntity: Comment::class, foreignKey: 'post_id', localKey: 'id')]
         public ?EntityCollection $comments = null,
     ) {
@@ -35,4 +33,3 @@ final class PostWithComments implements EntityInterface
         return $this->id;
     }
 }
-

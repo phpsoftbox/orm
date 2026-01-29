@@ -23,4 +23,3 @@ final readonly class SingleIdentifier implements IdentifierInterface
         return [$this->column => $this->value];
     }
 }
-

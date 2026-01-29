@@ -17,10 +17,8 @@ final class EntityWithBelongsTo implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'author_id', type: 'int')]
         public int $authorId,
-
         #[BelongsTo(targetEntity: UserEntity::class, joinColumn: 'authorId')]
         public ?UserEntity $author = null,
     ) {

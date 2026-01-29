@@ -38,7 +38,7 @@ final class PostWithNestedCommentsRepository extends AbstractEntityRepository
     {
         /** @var PostWithNestedComments $entity */
         return [
-            'id' => $entity->id,
+            'id'    => $entity->id,
             'title' => $entity->title,
         ];
     }

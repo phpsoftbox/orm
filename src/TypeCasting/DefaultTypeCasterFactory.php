@@ -10,12 +10,12 @@ use PhpSoftBox\Orm\TypeCasting\Handlers\BoolOrmHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\DateTimeHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\DecimalHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\EnumHandler;
-use PhpSoftBox\Orm\TypeCasting\Handlers\JsonHandler;
-use PhpSoftBox\Orm\TypeCasting\Handlers\PgArrayHandler;
-use PhpSoftBox\Orm\TypeCasting\Handlers\UuidHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\FloatOrmHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\IntOrmHandler;
+use PhpSoftBox\Orm\TypeCasting\Handlers\JsonHandler;
+use PhpSoftBox\Orm\TypeCasting\Handlers\PgArrayHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\StringOrmHandler;
+use PhpSoftBox\Orm\TypeCasting\Handlers\UuidHandler;
 
 /**
  * Фабрика дефолтного TypeCaster.

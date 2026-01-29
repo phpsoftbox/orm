@@ -25,4 +25,3 @@ interface IdentifierInterface
      */
     public function values(): array;
 }
-

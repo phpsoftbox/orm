@@ -23,7 +23,9 @@ final class HasOneHasManyConventionTest extends TestCase
     public function infersHasManyForeignKeyFromRelationProperty(): void
     {
         $config = new \PhpSoftBox\Orm\EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new \PhpSoftBox\Orm\Metadata\AttributeMetadataProvider(namingConvention: $config->namingConvention);
+
         $meta = $provider->for(EntityWithHasManyConvention::class);
 
         self::assertArrayHasKey('post', $meta->relations);
@@ -40,7 +42,9 @@ final class HasOneHasManyConventionTest extends TestCase
     public function infersHasOneForeignKeyFromRelationProperty(): void
     {
         $config = new \PhpSoftBox\Orm\EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new \PhpSoftBox\Orm\Metadata\AttributeMetadataProvider(namingConvention: $config->namingConvention);
+
         $meta = $provider->for(EntityWithHasOneConvention::class);
 
         self::assertArrayHasKey('profile', $meta->relations);

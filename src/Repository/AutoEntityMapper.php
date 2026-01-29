@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Repository;
 
-use PhpSoftBox\Orm\Metadata\ClassMetadata;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
 use PhpSoftBox\Orm\Metadata\PropertyMetadata;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeCasterInterface;
 use PhpSoftBox\Orm\TypeCasting\Options\TypeCastOptionsManager;
-
 use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
@@ -45,6 +43,7 @@ final readonly class AutoEntityMapper
         $meta = $this->metadata->for($entityClass);
 
         $rc = new ReflectionClass($entityClass);
+
         $entity = $rc->newInstanceWithoutConstructor();
 
         foreach ($meta->columns as $property => $colMeta) {
@@ -58,7 +57,7 @@ final readonly class AutoEntityMapper
             }
 
             $options = $this->optionsFromMetadata($colMeta);
-            $casted = $this->typeCaster->castFrom($colMeta->type, $value, $options);
+            $casted  = $this->typeCaster->castFrom($colMeta->type, $value, $options);
 
             $this->setPublicProperty($entity, $property, $casted);
         }
@@ -67,7 +66,6 @@ final readonly class AutoEntityMapper
     }
 
     /**
-     * @param object $entity
      * @return array<string, mixed>
      */
     public function extract(object $entity): array
@@ -77,8 +75,8 @@ final readonly class AutoEntityMapper
         $data = [];
 
         foreach ($meta->columns as $property => $colMeta) {
-            $value = $this->getPublicProperty($entity, $property);
-            $options = $this->optionsFromMetadata($colMeta);
+            $value                  = $this->getPublicProperty($entity, $property);
+            $options                = $this->optionsFromMetadata($colMeta);
             $data[$colMeta->column] = $this->typeCaster->castTo($colMeta->type, $value, $options);
         }
 
@@ -91,10 +89,10 @@ final readonly class AutoEntityMapper
     private function optionsFromMetadata(PropertyMetadata $meta): array
     {
         return [
-            'type' => $meta->type,
+            'type'     => $meta->type,
             'nullable' => $meta->nullable,
-            'length' => $meta->length,
-            'default' => $meta->default,
+            'length'   => $meta->length,
+            'default'  => $meta->default,
             ...$this->optionsManager->resolve($meta->type, $meta->options),
         ];
     }

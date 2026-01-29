@@ -18,6 +18,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function array_map;
+
 #[CoversClass(EntityManager::class)]
 final class HasManyThroughIntegrationTest extends TestCase
 {
@@ -28,60 +30,61 @@ final class HasManyThroughIntegrationTest extends TestCase
     public function eagerLoadsHasManyThrough(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE companies_hmt (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
         $conn->execute(
-            "
+            '
                 CREATE TABLE authors_hmt (
                     id INTEGER PRIMARY KEY,
                     company_id INTEGER NOT NULL
                 )
-            "
+            ',
         );
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts_hmt (
                     id INTEGER PRIMARY KEY,
                     author_id INTEGER NOT NULL,
                     title VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
             "
                 INSERT INTO companies_hmt (id, name) VALUES (1, 'Mindgarden')
-            "
+            ",
         );
         $conn->execute(
-            "
+            '
                 INSERT INTO authors_hmt (id, company_id) VALUES (10, 1)
-            "
+            ',
         );
         $conn->execute(
-            "
+            '
                 INSERT INTO authors_hmt (id, company_id) VALUES (11, 1)
-            "
+            ',
         );
         $conn->execute(
             "
                 INSERT INTO posts_hmt (id, author_id, title) VALUES (100, 10, 'a')
-            "
+            ",
         );
         $conn->execute(
             "
                 INSERT INTO posts_hmt (id, author_id, title) VALUES (101, 11, 'b')
-            "
+            ",
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new InMemoryUnitOfWork());
@@ -94,7 +97,7 @@ final class HasManyThroughIntegrationTest extends TestCase
 
         /** @var AbstractEntityRepository<CompanyWithPostsThroughAuthors> $repo */
         $companies = $repo->with(['posts'])->all();
-        $items = $companies->all();
+        $items     = $companies->all();
 
         self::assertCount(1, $items);
         self::assertCount(2, $items[0]->posts->all());

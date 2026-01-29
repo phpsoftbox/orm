@@ -30,51 +30,52 @@ final class NestedHasManyIntegrationTest extends TestCase
     public function withSupportsNestedThroughHasManyCollections(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts_nested_comments (
                     id INTEGER PRIMARY KEY,
                     title VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
         $conn->execute(
-            "
+            '
                 CREATE TABLE authors_nested (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
         $conn->execute(
-            "
+            '
                 CREATE TABLE comments_nested (
                     id INTEGER PRIMARY KEY,
                     post_id INTEGER NOT NULL,
                     author_id INTEGER NOT NULL,
                     body VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
             "
                 INSERT INTO posts_nested_comments (id, title) VALUES (1, 'Hello')
-            "
+            ",
         );
         $conn->execute(
             "
                 INSERT INTO authors_nested (id, name) VALUES (10, 'Anton')
-            "
+            ",
         );
         $conn->execute(
             "
                 INSERT INTO comments_nested (id, post_id, author_id, body) VALUES (100, 1, 10, 'a')
-            "
+            ",
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new InMemoryUnitOfWork());

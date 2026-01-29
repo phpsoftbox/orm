@@ -46,6 +46,7 @@ final class OrmTypeCaster extends TypeCaster implements OrmTypeCasterInterface
 
             if (is_a($typeOrHandler, OrmTypeHandlerInterface::class, true)) {
                 $handler = new $typeOrHandler();
+
                 $result[$key] = $handler->castFrom($data[$key]);
                 continue;
             }
@@ -59,12 +60,14 @@ final class OrmTypeCaster extends TypeCaster implements OrmTypeCasterInterface
     public function castTo(string $type, mixed $value, array $options = []): int|float|string|bool|null
     {
         $handler = $this->resolveHandler($type);
+
         return $handler->castTo($value, $options);
     }
 
     public function castFrom(string $type, mixed $value, array $options = []): mixed
     {
         $handler = $this->resolveHandler($type);
+
         return $handler->castFrom($value, $options);
     }
 

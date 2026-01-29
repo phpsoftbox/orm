@@ -24,4 +24,3 @@ final class TestEntity implements EntityInterface
         return $this->id;
     }
 }
-

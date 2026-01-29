@@ -7,4 +7,3 @@ namespace PhpSoftBox\Orm\Behavior\Command;
 final readonly class OnForceDelete extends AbstractEntityCommand
 {
 }
-

@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 
+use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\TypeHandlerInterface;
+
+use function is_float;
+use function is_numeric;
 
 final class FloatHandler implements TypeHandlerInterface
 {
@@ -27,6 +31,6 @@ final class FloatHandler implements TypeHandlerInterface
             return (float) $value;
         }
 
-        throw new \InvalidArgumentException('Cannot cast value to float');
+        throw new InvalidArgumentException('Cannot cast value to float');
     }
 }

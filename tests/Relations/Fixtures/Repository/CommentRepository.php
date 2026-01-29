@@ -36,14 +36,17 @@ final class CommentRepository extends AbstractEntityRepository
     {
         /** @var Comment $entity */
         return [
-            'id' => $entity->id,
+            'id'      => $entity->id,
             'post_id' => $entity->postId,
-            'body' => $entity->body,
+            'body'    => $entity->body,
         ];
     }
 
-    protected function doPersist(EntityInterface $entity): void {}
+    protected function doPersist(EntityInterface $entity): void
+    {
+    }
 
-    protected function doRemove(EntityInterface $entity): void {}
+    protected function doRemove(EntityInterface $entity): void
+    {
+    }
 }
-

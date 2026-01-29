@@ -19,7 +19,7 @@ final class RamseyUuidGeneratorTest extends TestCase
     #[Test]
     public function generatesUuid7(): void
     {
-        $uuid = (new RamseyUuidGenerator())->generate();
+        $uuid = new RamseyUuidGenerator()->generate();
 
         self::assertInstanceOf(UuidInterface::class, $uuid);
         self::assertSame(7, $uuid->getFields()->getVersion());

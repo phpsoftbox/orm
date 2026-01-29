@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhpSoftBox\Orm\Behavior;
 
 use function iconv;
+use function is_string;
 use function preg_replace;
 use function strtolower;
 use function trim;
@@ -33,4 +34,3 @@ final class Slugifier
         return $value;
     }
 }
-

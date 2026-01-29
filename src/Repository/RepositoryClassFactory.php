@@ -52,7 +52,8 @@ final readonly class RepositoryClassFactory implements RepositoryFactoryInterfac
         }
 
         $rc = new ReflectionClass($repoClass);
-        $ctor = $rc->getConstructor();
+
+        $ctor     = $rc->getConstructor();
         $ctorArgs = $ctor?->getNumberOfParameters() ?? 0;
 
         // 1) legacy: repo(connection)

@@ -17,6 +17,8 @@ use PhpSoftBox\Orm\Metadata\Attributes\HasManyThrough;
 use PhpSoftBox\Orm\Metadata\Attributes\HasOne;
 use PhpSoftBox\Orm\Metadata\Attributes\Id;
 use PhpSoftBox\Orm\Metadata\Attributes\ManyToOne;
+use PhpSoftBox\Orm\Metadata\Attributes\MorphMany;
+use PhpSoftBox\Orm\Metadata\Attributes\MorphTo;
 use PhpSoftBox\Orm\Metadata\Attributes\NotMapped;
 use PhpSoftBox\Orm\Metadata\Attributes\Sluggable;
 use PhpSoftBox\Orm\Metadata\Attributes\SoftDelete;
@@ -70,8 +72,8 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
             $table = $naming->entityTable($rc->getShortName());
         }
 
-        $columns = [];
-        $pkProperties = [];
+        $columns              = [];
+        $pkProperties         = [];
         $idGenerationStrategy = null;
 
         foreach ($rc->getProperties() as $prop) {
@@ -88,7 +90,7 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
             if ($isId) {
                 $pkProperties[] = $prop->getName();
 
-                $gen = $this->firstAttrInstance($prop, GeneratedValue::class);
+                $gen                  = $this->firstAttrInstance($prop, GeneratedValue::class);
                 $idGenerationStrategy = $gen?->strategy;
             }
 
@@ -125,14 +127,14 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
         $eventListeners = [];
         foreach ($rc->getAttributes(BehaviorEventListener::class) as $attr) {
             /** @var BehaviorEventListener $listener */
-            $listener = $attr->newInstance();
+            $listener         = $attr->newInstance();
             $eventListeners[] = $listener->listener;
         }
 
         $hooks = [];
         foreach ($rc->getAttributes(BehaviorHook::class) as $attr) {
             /** @var BehaviorHook $hook */
-            $hook = $attr->newInstance();
+            $hook    = $attr->newInstance();
             $hooks[] = new HookMetadata(
                 callable: $hook->callable,
                 events: $hook->events,
@@ -236,7 +238,7 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
             if (($btm = $this->firstAttrInstance($prop, BelongsToMany::class)) !== null) {
                 /** @var BelongsToMany $btm */
 
-                $pivotTable = $btm->pivotTable;
+                $pivotTable      = $btm->pivotTable;
                 $foreignPivotKey = $btm->foreignPivotKey;
                 $relatedPivotKey = $btm->relatedPivotKey;
 
@@ -277,13 +279,15 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
                     relatedPivotKey: $relatedPivotKey,
                     parentKey: $btm->parentKey,
                     relatedKey: $btm->relatedKey,
+                    pivotEntity: $btm->pivotEntity,
+                    pivotAccessor: $btm->pivotAccessor,
                 );
             }
 
             if (($hmt = $this->firstAttrInstance($prop, HasManyThrough::class)) !== null) {
                 /** @var HasManyThrough $hmt */
 
-                $firstKey = $hmt->firstKey;
+                $firstKey  = $hmt->firstKey;
                 $secondKey = $hmt->secondKey;
 
                 if ($firstKey === null || $secondKey === null) {
@@ -302,11 +306,36 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
                     property: $propName,
                     type: 'has_many_through',
                     targetEntity: $hmt->targetEntity,
+                    localKey: $hmt->localKey,
                     throughEntity: $hmt->throughEntity,
                     firstKey: $firstKey,
                     secondKey: $secondKey,
-                    localKey: $hmt->localKey,
                     targetKey: $hmt->targetKey,
+                );
+            }
+
+            if (($morphTo = $this->firstAttrInstance($prop, MorphTo::class)) !== null) {
+                /** @var MorphTo $morphTo */
+                $relations[$propName] = new RelationMetadata(
+                    property: $propName,
+                    type: 'morph_to',
+                    targetEntity: 'object',
+                    morphTypeColumn: $morphTo->typeColumn,
+                    morphIdColumn: $morphTo->idColumn,
+                    morphMap: $morphTo->map,
+                );
+            }
+
+            if (($morphMany = $this->firstAttrInstance($prop, MorphMany::class)) !== null) {
+                /** @var MorphMany $morphMany */
+                $relations[$propName] = new RelationMetadata(
+                    property: $propName,
+                    type: 'morph_many',
+                    targetEntity: $morphMany->targetEntity,
+                    localKey: $morphMany->localKey,
+                    morphTypeColumn: $morphMany->typeColumn,
+                    morphIdColumn: $morphMany->idColumn,
+                    morphTypeValue: $morphMany->typeValue,
                 );
             }
         }
@@ -314,7 +343,7 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
         $sluggables = [];
         foreach ($rc->getAttributes(Sluggable::class) as $attr) {
             /** @var Sluggable $slug */
-            $slug = $attr->newInstance();
+            $slug         = $attr->newInstance();
             $sluggables[] = $slug;
         }
 
@@ -347,11 +376,11 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
         if ($attrs === []) {
             return null;
         }
+
         return $attrs[0]->newInstance();
     }
 
     /**
-     * @param ReflectionProperty $prop
      * @param class-string $attr
      */
     private function hasAttr(ReflectionProperty $prop, string $attr): bool

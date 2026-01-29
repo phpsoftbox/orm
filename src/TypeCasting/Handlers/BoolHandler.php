@@ -6,6 +6,13 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 
 use PhpSoftBox\Orm\TypeCasting\Contracts\TypeHandlerInterface;
 
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_string;
+use function strtolower;
+use function trim;
+
 final class BoolHandler implements TypeHandlerInterface
 {
     public function supports(string $type): bool
@@ -29,6 +36,7 @@ final class BoolHandler implements TypeHandlerInterface
 
         if (is_string($value)) {
             $v = strtolower(trim($value));
+
             return match ($v) {
                 '1', 'true', 'yes', 'y', 'on' => true,
                 '0', 'false', 'no', 'n', 'off' => false,

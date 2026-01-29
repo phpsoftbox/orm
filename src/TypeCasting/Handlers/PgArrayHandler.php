@@ -7,6 +7,20 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 
+use function array_map;
+use function implode;
+use function is_array;
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_string;
+use function str_contains;
+use function str_ends_with;
+use function str_replace;
+use function strlen;
+use function substr;
+use function trim;
+
 /**
  * PostgreSQL array.
  *
@@ -48,10 +62,10 @@ final class PgArrayHandler implements OrmTypeHandlerInterface
                 continue;
             }
 
-            $s = (string) $item;
+            $s            = (string) $item;
             $needsQuoting = str_contains($s, ',') || str_contains($s, '"') || str_contains($s, '{') || str_contains($s, '}') || str_contains($s, ' ');
-            $s = str_replace('\\', '\\\\', $s);
-            $s = str_replace('"', '\\"', $s);
+            $s            = str_replace('\\', '\\\\', $s);
+            $s            = str_replace('"', '\\"', $s);
 
             $parts[] = $needsQuoting ? '"' . $s . '"' : $s;
         }
@@ -98,10 +112,11 @@ final class PgArrayHandler implements OrmTypeHandlerInterface
             if ($v === null) {
                 return null;
             }
+
             return match ($itemType) {
-                'int' => (int) $v,
+                'int'   => (int) $v,
                 'float' => (float) $v,
-                'bool' => ($v === 't' || $v === 'true' || $v === '1' || $v === 1),
+                'bool'  => ($v === 't' || $v === 'true' || $v === '1' || $v === 1),
                 default => (string) $v,
             };
         }, $items);
@@ -117,11 +132,11 @@ final class PgArrayHandler implements OrmTypeHandlerInterface
      */
     private function parseArrayInner(string $inner): array
     {
-        $result = [];
-        $len = strlen($inner);
-        $buf = '';
+        $result   = [];
+        $len      = strlen($inner);
+        $buf      = '';
         $inQuotes = false;
-        $escape = false;
+        $escape   = false;
 
         for ($i = 0; $i < $len; $i++) {
             $ch = $inner[$i];
@@ -144,7 +159,7 @@ final class PgArrayHandler implements OrmTypeHandlerInterface
 
             if (!$inQuotes && $ch === ',') {
                 $result[] = $this->normalizeToken($buf);
-                $buf = '';
+                $buf      = '';
                 continue;
             }
 
@@ -162,7 +177,7 @@ final class PgArrayHandler implements OrmTypeHandlerInterface
         if ($token === 'NULL') {
             return null;
         }
+
         return $token;
     }
 }
-

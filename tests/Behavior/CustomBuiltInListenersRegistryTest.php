@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests;
 
+use PDO;
 use PhpSoftBox\Database\Connection\Connection;
 use PhpSoftBox\Database\Driver\SqliteDriver;
 use PhpSoftBox\Orm\Behavior\Attributes\Listen;
@@ -15,10 +16,11 @@ use PhpSoftBox\Orm\EntityManagerConfig;
 use PhpSoftBox\Orm\IdentityMap\WeakIdentityMap;
 use PhpSoftBox\Orm\Tests\Behavior\Fixtures\PostWithSlug;
 use PhpSoftBox\Orm\UnitOfWork\AdvancedUnitOfWork;
-use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+
+use function strtoupper;
 
 #[CoversClass(EntityManager::class)]
 #[CoversClass(EntityManagerConfig::class)]
@@ -33,17 +35,19 @@ final class CustomBuiltInListenersRegistryTest extends TestCase
     public function customBuiltInListenersRegistryIsUsed(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
+
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts (
                     id INTEGER PRIMARY KEY,
                     title VARCHAR(255) NOT NULL,
                     slug VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $registry = new class () implements BuiltInListenersRegistryInterface {
@@ -54,9 +58,9 @@ final class CustomBuiltInListenersRegistryTest extends TestCase
                         #[Listen(OnCreate::class)]
                         public function onCreate(OnCreate $event): void
                         {
-                            $data = $event->state()->getData();
+                            $data  = $event->state()->getData();
                             $title = (string) ($data['title'] ?? '');
-                            $slug = strtoupper((new Slugifier())->slugify($title));
+                            $slug  = strtoupper(new Slugifier()->slugify($title));
                             $event->state()->register('slug', $slug);
                         }
                     },
@@ -74,6 +78,7 @@ final class CustomBuiltInListenersRegistryTest extends TestCase
         );
 
         $post = new PostWithSlug(id: 1, title: 'Hello World', slug: '');
+
         $em->persist($post);
         $em->flush();
 
@@ -82,4 +87,3 @@ final class CustomBuiltInListenersRegistryTest extends TestCase
         self::assertSame('HELLO-WORLD', $row['slug']);
     }
 }
-
