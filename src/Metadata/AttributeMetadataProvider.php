@@ -17,6 +17,8 @@ use PhpSoftBox\Orm\Metadata\Attributes\HasManyThrough;
 use PhpSoftBox\Orm\Metadata\Attributes\HasOne;
 use PhpSoftBox\Orm\Metadata\Attributes\Id;
 use PhpSoftBox\Orm\Metadata\Attributes\ManyToOne;
+use PhpSoftBox\Orm\Metadata\Attributes\MorphMany;
+use PhpSoftBox\Orm\Metadata\Attributes\MorphTo;
 use PhpSoftBox\Orm\Metadata\Attributes\NotMapped;
 use PhpSoftBox\Orm\Metadata\Attributes\Sluggable;
 use PhpSoftBox\Orm\Metadata\Attributes\SoftDelete;
@@ -277,6 +279,8 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
                     relatedPivotKey: $relatedPivotKey,
                     parentKey: $btm->parentKey,
                     relatedKey: $btm->relatedKey,
+                    pivotEntity: $btm->pivotEntity,
+                    pivotAccessor: $btm->pivotAccessor,
                 );
             }
 
@@ -302,11 +306,36 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
                     property: $propName,
                     type: 'has_many_through',
                     targetEntity: $hmt->targetEntity,
+                    localKey: $hmt->localKey,
                     throughEntity: $hmt->throughEntity,
                     firstKey: $firstKey,
                     secondKey: $secondKey,
-                    localKey: $hmt->localKey,
                     targetKey: $hmt->targetKey,
+                );
+            }
+
+            if (($morphTo = $this->firstAttrInstance($prop, MorphTo::class)) !== null) {
+                /** @var MorphTo $morphTo */
+                $relations[$propName] = new RelationMetadata(
+                    property: $propName,
+                    type: 'morph_to',
+                    targetEntity: 'object',
+                    morphTypeColumn: $morphTo->typeColumn,
+                    morphIdColumn: $morphTo->idColumn,
+                    morphMap: $morphTo->map,
+                );
+            }
+
+            if (($morphMany = $this->firstAttrInstance($prop, MorphMany::class)) !== null) {
+                /** @var MorphMany $morphMany */
+                $relations[$propName] = new RelationMetadata(
+                    property: $propName,
+                    type: 'morph_many',
+                    targetEntity: $morphMany->targetEntity,
+                    localKey: $morphMany->localKey,
+                    morphTypeColumn: $morphMany->typeColumn,
+                    morphIdColumn: $morphMany->idColumn,
+                    morphTypeValue: $morphMany->typeValue,
                 );
             }
         }

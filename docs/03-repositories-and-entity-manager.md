@@ -11,6 +11,23 @@
 - `AbstractRepository`
 - `AbstractEntityRepository`
 
+### BulkEntityRepositoryInterface (batch-загрузка)
+
+`BulkEntityRepositoryInterface` нужен для **eager loading связей** (метод `EntityManager::load()`), чтобы избежать N+1.
+
+Идея проста:
+
+- EntityManager собирает список ключей (`IN (...)`) для всех сущностей
+- делает **один запрос** к БД
+- а затем должен корректно превратить строки в объекты
+
+Поэтому для загрузки связей репозиторий целевой сущности должен поддерживать batch-операции:
+
+- `findManyByColumn()` — загрузка пачки сущностей по произвольной колонке
+- `hydrateManyRows()` — гидрация пачки строк (полезно для более сложных стратегий загрузки)
+
+На практике это обычно «просто работает», если ваш репозиторий наследуется от `AbstractEntityRepository`.
+
 ## EntityManager
 
 `EntityManager` хранит:

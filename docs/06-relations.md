@@ -108,6 +108,53 @@ $em->load($post, 'comments');
 > Pivot-таблица (junction table) — это таблица, которая хранит пары идентификаторов (`user_id`, `role_id`) и, при необходимости,
 > дополнительные данные связи (например `created_datetime`, `granted_by_user_id`, `expires_datetime`).
 
+### Pivot helpers (attach/detach/sync)
+
+Для управления pivot-таблицей используйте pivot-менеджер:
+
+```php
+$em->pivot($user, 'roles')->attach(10);
+$em->pivot($user, 'roles')->detach(10);
+$em->pivot($user, 'roles')->sync([11, 12]);
+```
+
+#### syncWithPivotData (pivotData + updatePivot)
+
+Если вам нужно записывать дополнительные поля pivot-таблицы, используйте `syncWithPivotData()`.
+
+Сигнатура (упрощённо):
+
+- `relatedIdToPivotData`: карта `<relatedId => pivotData>`
+- `updatePivot`:
+  - `false` (по умолчанию) — для **существующих** связей не обновляет pivot-данные
+  - `true` — для существующих связей выполняет `UPDATE` по полям из `pivotData`
+
+Пример:
+
+```php
+$em->pivot($user, 'roles')->syncWithPivotData([
+    10 => ['created_datetime' => '2026-01-27T12:00:00+00:00'],
+    11 => ['created_datetime' => '2026-01-27T12:05:00+00:00'],
+]);
+
+// Обновить pivot-поля для существующих связей:
+$em->pivot($user, 'roles')->syncWithPivotData([
+    10 => ['created_datetime' => '2026-01-27T13:00:00+00:00'],
+    11 => ['created_datetime' => '2026-01-27T12:05:00+00:00'],
+], updatePivot: true);
+```
+
+Правила работы `syncWithPivotData()`:
+
+1) Связи, которых нет в списке — удаляются (DELETE)
+2) Связи, которых нет в БД — добавляются (INSERT) с `pivotData`
+3) Связи, которые уже есть:
+   - при `updatePivot=false` pivot-данные не трогаются
+   - при `updatePivot=true` выполняется UPDATE по полям из `pivotData` (если массив не пустой)
+
+> Важно: pivot helpers пишут напрямую в БД (вне UnitOfWork).
+> Если у вас уже загружены связи через `$em->load(...)`, то после изменения pivot может понадобиться повторный `$em->load(...)`.
+
 ### Когда нужно указывать pivotTable вручную
 
 Указывать `pivotTable`/ключи **обязательно**, если:
@@ -192,14 +239,13 @@ final class User
 
 ### Пример 4: pivot с дополнительными колонками
 
-ORM пока использует pivot-таблицу только как «связку» ID-шников для загрузки связей.
-Если в pivot-таблице есть дополнительные поля (`created_datetime`, `expires_datetime` и т.п.),
-то есть два рабочих подхода:
+Если в pivot-таблице есть дополнительные поля (`created_datetime`, `expires_datetime` и т.п.), есть два основных сценария:
 
-1) Вынести pivot-таблицу в отдельную сущность и работать с ней как с обычной таблицей.
-2) Оставить `BelongsToMany` только для загрузки сущностей, а дополнительные данные читать отдельным запросом.
+1) **Нужны только данные связки (ID) + управление связями**
+   - используйте pivot helpers: `$em->pivot($user, 'roles')->attach/detach/sync(...)`
 
-> В будущем можно расширить ORM, чтобы у `BelongsToMany` появился вариант «pivot Entity».
+2) **Нужны дополнительные поля pivot как часть модели**
+   - используйте `pivotEntity` + accessor (`pivot()`), см. главу [Pivot Entity](07-pivot-entity.md)
 
 ---
 
@@ -365,101 +411,102 @@ final class Role
 
 ---
 
-### TODO: pivot entity (подробные примеры)
+## Как сейчас и как будет (примеры расширений)
 
-Сейчас `BelongsToMany` использует pivot-таблицу только как «связку» ID-шников.
-Если в pivot есть дополнительные поля (например `created_datetime`, `expires_datetime`, `granted_by_user_id`),
-то обычно хочется получить их как часть модели.
+Ниже — короткие примеры, чтобы было видно разницу: что уже есть, и что могло бы появиться, если будем расширять ORM.
 
-Ниже — примеры, как мы можем развить ORM.
+### 1) Самоссылка (self reference) — уже можно, без новых типов
 
-#### Вариант A (рекомендуемый): pivot как отдельная сущность (явная модель)
+Это не новый тип relation. Это обычный `HasMany`/`ManyToOne`, просто `targetEntity` = текущий класс.
 
-Например, у нас есть:
-- `users`
-- `roles`
-- `user_roles` с дополнительным полем `created_datetime`
-
-Тогда делаем pivot entity:
+**Сейчас (и будет так же):**
 
 ```php
-#[Entity(table: 'user_roles')]
-final class UserRole implements EntityInterface
+#[Entity(table: 'categories')]
+final class Category
 {
     #[Id]
-    #[Column(type: 'primary')]
+    #[Column(type: 'int')]
     public int $id;
 
-    #[Column(name: 'user_id', type: 'int')]
-    public int $userId;
+    #[Column(name: 'parent_id', type: 'int', nullable: true)]
+    public ?int $parentId = null;
 
-    #[Column(name: 'role_id', type: 'int')]
-    public int $roleId;
+    #[ManyToOne(targetEntity: Category::class, joinColumn: 'parentId', referencedColumn: 'id')]
+    public ?Category $parent = null;
 
-    #[Column(name: 'created_datetime', type: 'datetime')]
-    public DateTimeImmutable $createdDatetime;
-
-    public function id(): int|null
-    {
-        return $this->id;
-    }
+    #[HasMany(targetEntity: Category::class, foreignKey: 'parent_id', localKey: 'id')]
+    public EntityCollection $children;
 }
 ```
 
-Плюсы:
-- максимально прозрачно
-- можно делать CRUD по pivot как по обычной таблице
-- можно навесить behaviors/typecasting/softdelete и т.д.
-
-Минусы:
-- это не «BelongsToMany с extras», а отдельная модель
-
-#### Вариант B: BelongsToMany с pivotEntity (будущее расширение)
-
-Потенциальный API (предложение):
+Загрузка:
 
 ```php
-#[BelongsToMany(
-    targetEntity: Role::class,
-    pivotTable: 'user_roles',
-    foreignPivotKey: 'user_id',
-    relatedPivotKey: 'role_id',
-    pivotEntity: UserRole::class,
-)]
-public EntityCollection $roles;
+$em->load($category, ['parent', 'children']);
 ```
 
-Идея:
-- `$user->roles` возвращает `EntityCollection<Role>` как сейчас
-- при этом `EntityManager::load()` дополнительно загружает pivot-строку `UserRole` и прикрепляет её
-  либо как `$role->__pivot` (внутреннее поле), либо через отдельный accessor.
+### 2) Polymorphic (Morph) — сейчас нет, «как будет»
 
-#### Доступ к pivot данным (пример будущего API)
+Если захотим поддержать комментарии к разным сущностям (Post/Video/...), обычно делают поля:
 
-Например:
+- `commentable_type` (строка)
+- `commentable_id` (int/uuid)
+
+**Сейчас:** это придётся решать вручную на уровне приложения.
+
+**Как будет (предложение):**
 
 ```php
-$em->load($user, 'roles');
+#[Entity(table: 'comments')]
+final class Comment
+{
+    #[Id]
+    #[Column(type: 'int')]
+    public int $id;
 
-foreach ($user->roles as $role) {
-    // например, доступ к pivot-данным
-    $created = $role->pivot()->createdDatetime;
+    #[Column(name: 'commentable_type', type: 'string')]
+    public string $commentableType;
+
+    #[Column(name: 'commentable_id', type: 'int')]
+    public int $commentableId;
+
+    #[MorphTo(
+        typeColumn: 'commentable_type',
+        idColumn: 'commentable_id',
+        map: [
+            'post' => Post::class,
+            'video' => Video::class,
+        ],
+    )]
+    public object|null $commentable = null;
+}
+
+#[Entity(table: 'posts')]
+final class Post
+{
+    #[Id]
+    #[Column(type: 'int')]
+    public int $id;
+
+    #[MorphMany(
+        targetEntity: Comment::class,
+        typeColumn: 'commentable_type',
+        idColumn: 'commentable_id',
+        typeValue: 'post',
+    )]
+    public EntityCollection $comments;
 }
 ```
 
-#### Attach/Detach/Sync (будущий API)
-
-Чтобы работать с pivot как с отношением, обычно нужны методы уровня repository/ORM:
+Ожидаемое поведение `load()`:
 
 ```php
-// Добавить роль пользователю
-$userRepo->attach($user, 'roles', $roleId, ['created_datetime' => new DateTimeImmutable()]);
+// $comments — список Comment
+$em->load($comments, 'commentable');
 
-// Удалить
-$userRepo->detach($user, 'roles', $roleId);
-
-// Синхронизировать список ролей
-$userRepo->sync($user, 'roles', [$roleId1, $roleId2]);
+// ORM группирует Comment по commentableType и делает несколько batch-запросов:
+// - один IN(...) по post
+// - один IN(...) по video
+// ...
 ```
-
-Это логично ложится на следующий этап ORM, когда появятся relation helpers.

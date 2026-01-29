@@ -45,7 +45,7 @@ final class GenericEntityRepository implements EntityRepositoryInterface
 
         $this->mapper = new AutoEntityMapper(
             metadata: $this->metadata,
-            typeCaster: (new DefaultTypeCasterFactory())->create(),
+            typeCaster: new DefaultTypeCasterFactory()->create(),
             optionsManager: new TypeCastOptionsManager(),
         );
 

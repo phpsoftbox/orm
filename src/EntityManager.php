@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace PhpSoftBox\Orm;
 
 use InvalidArgumentException;
-use PhpSoftBox\Collection\Collection;
 use PhpSoftBox\Database\Contracts\ConnectionInterface;
 use PhpSoftBox\Database\QueryBuilder\SelectQueryBuilder;
 use PhpSoftBox\Orm\Behavior\Command\EntityCommandInterface;
+use PhpSoftBox\Orm\Contracts\BulkEntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\EntityInterface;
 use PhpSoftBox\Orm\Contracts\EntityManagerInterface;
 use PhpSoftBox\Orm\Contracts\EntityRepositoryInterface;
@@ -21,8 +21,9 @@ use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
 use PhpSoftBox\Orm\Metadata\ColumnPropertyMapperInterface;
 use PhpSoftBox\Orm\Metadata\MetadataColumnPropertyMapper;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
+use PhpSoftBox\Orm\Relation\PivotRelationManager;
+use PhpSoftBox\Orm\Relation\PivotRelationWriter;
 use PhpSoftBox\Orm\Repository\AbstractRepository;
-use PhpSoftBox\Orm\Repository\AbstractEntityRepository;
 use PhpSoftBox\Orm\Repository\AutoEntityMapper;
 use PhpSoftBox\Orm\Repository\DefaultRepositoryResolver;
 use PhpSoftBox\Orm\Repository\RepositoryClassFactory;
@@ -269,7 +270,7 @@ final class EntityManager implements EntityManagerInterface
     }
 
     /**
-     * Подгружает связь (пока поддержи��аем только ManyToOne) и записывает в свойство сущности.
+     * Подгружает связь (пока поддерживаем только ManyToOne) и записывает в свойство сущности.
      */
     public function load(EntityInterface|iterable $entities, string|array $relations): void
     {
@@ -382,6 +383,8 @@ final class EntityManager implements EntityManagerInterface
             'has_many' => $this->loadHasMany($entities, $relationProperty, $relation),
             'belongs_to_many' => $this->loadBelongsToMany($entities, $relationProperty, $relation),
             'has_many_through' => $this->loadHasManyThrough($entities, $relationProperty, $relation),
+            'morph_to' => $this->loadMorphTo($entities, $relationProperty, $relation),
+            'morph_many' => $this->loadMorphMany($entities, $relationProperty, $relation),
             default => throw new InvalidArgumentException('Unsupported relation type: ' . $relation->type),
         };
     }
@@ -414,8 +417,8 @@ final class EntityManager implements EntityManagerInterface
         }
 
         $targetRepo = $this->repository($relation->targetEntity);
-        if (!$targetRepo instanceof AbstractEntityRepository) {
-            throw new InvalidArgumentException('HasOne requires target repository to extend AbstractEntityRepository (batch hydrate).');
+        if (!$targetRepo instanceof BulkEntityRepositoryInterface) {
+            throw new InvalidArgumentException('HasOne requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
         }
 
         $children = $targetRepo->findManyByColumn(
@@ -486,8 +489,8 @@ final class EntityManager implements EntityManagerInterface
         }
 
         $targetRepo = $this->repository($relation->targetEntity);
-        if (!$targetRepo instanceof AbstractEntityRepository) {
-            throw new InvalidArgumentException('ManyToOne requires target repository to extend AbstractEntityRepository (batch hydrate).');
+        if (!$targetRepo instanceof BulkEntityRepositoryInterface) {
+            throw new InvalidArgumentException('ManyToOne requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
         }
 
         $targets = $targetRepo->findManyByColumn(
@@ -540,8 +543,8 @@ final class EntityManager implements EntityManagerInterface
         }
 
         $targetRepo = $this->repository($relation->targetEntity);
-        if (!$targetRepo instanceof AbstractEntityRepository) {
-            throw new InvalidArgumentException('HasMany requires target repository to extend AbstractEntityRepository (batch hydrate).');
+        if (!$targetRepo instanceof BulkEntityRepositoryInterface) {
+            throw new InvalidArgumentException('HasMany requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
         }
 
         $children = $targetRepo->findManyByColumn(
@@ -603,9 +606,14 @@ final class EntityManager implements EntityManagerInterface
             return;
         }
 
+        // Если pivotEntity указан — забираем всю строку pivot (с extra полями), иначе только два ключа.
+        $pivotSelect = ($relation->pivotEntity !== null)
+            ? ['*']
+            : [$relation->foreignPivotKey, $relation->relatedPivotKey];
+
         $pivotRows = $this->connection
             ->query()
-            ->select([$relation->foreignPivotKey, $relation->relatedPivotKey])
+            ->select($pivotSelect)
             ->from($relation->pivotTable)
             ->whereIn($relation->foreignPivotKey, array_values($parentIds))
             ->fetchAll();
@@ -613,6 +621,10 @@ final class EntityManager implements EntityManagerInterface
         /** @var array<string, list<int|string>> $relatedIdsByParent */
         $relatedIdsByParent = [];
         $allRelatedIds = [];
+
+        // pivot map: parentId -> relatedId -> pivotRow
+        /** @var array<string, array<string, array<string, mixed>>> $pivotRowByParentAndRelated */
+        $pivotRowByParentAndRelated = [];
 
         foreach ($pivotRows as $row) {
             $p = $row[$relation->foreignPivotKey] ?? null;
@@ -623,14 +635,21 @@ final class EntityManager implements EntityManagerInterface
             }
 
             $pKey = (string) $p;
+            $rKey = (string) $r;
+
             $relatedIdsByParent[$pKey] ??= [];
             $relatedIdsByParent[$pKey][] = $r;
-            $allRelatedIds[(string) $r] = $r;
+            $allRelatedIds[$rKey] = $r;
+
+            if ($relation->pivotEntity !== null) {
+                $pivotRowByParentAndRelated[$pKey] ??= [];
+                $pivotRowByParentAndRelated[$pKey][$rKey] = $row;
+            }
         }
 
         $targetRepo = $this->repository($relation->targetEntity);
-        if (!$targetRepo instanceof AbstractEntityRepository) {
-            throw new InvalidArgumentException('BelongsToMany requires target repository to extend AbstractEntityRepository (batch hydrate).');
+        if (!$targetRepo instanceof BulkEntityRepositoryInterface) {
+            throw new InvalidArgumentException('BelongsToMany requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
         }
 
         $relatedEntities = $targetRepo->findManyByColumn(
@@ -650,6 +669,10 @@ final class EntityManager implements EntityManagerInterface
             }
         }
 
+        $pivotEntityClass = $relation->pivotEntity;
+        $pivotAccessor = $relation->pivotAccessor ?: 'pivot';
+        $pivotSetter = 'set' . ucfirst($pivotAccessor);
+
         foreach ($entities as $entity) {
             $id = $this->readProperty($entity, $relation->parentKey);
             if (is_object($id) && method_exists($id, 'toString')) {
@@ -657,12 +680,31 @@ final class EntityManager implements EntityManagerInterface
             }
 
             $list = [];
-            if ($id !== null && isset($relatedIdsByParent[(string) $id])) {
-                foreach ($relatedIdsByParent[(string) $id] as $rid) {
+            $parentKey = $id !== null ? (string) $id : null;
+
+            if ($parentKey !== null && isset($relatedIdsByParent[$parentKey])) {
+                foreach ($relatedIdsByParent[$parentKey] as $rid) {
                     $ridKey = (string) $rid;
-                    if (isset($relatedMap[$ridKey])) {
-                        $list[] = $relatedMap[$ridKey];
+                    if (!isset($relatedMap[$ridKey])) {
+                        continue;
                     }
+
+                    $relEntity = $relatedMap[$ridKey];
+
+                    if ($pivotEntityClass !== null && isset($pivotRowByParentAndRelated[$parentKey][$ridKey])) {
+                        $pivotRow = $pivotRowByParentAndRelated[$parentKey][$ridKey];
+                        $pivot = $this->mapper->hydrate($pivotEntityClass, $pivotRow);
+
+                        // Устанавливаем pivot в target entity, если есть нужный setter.
+                        if (method_exists($relEntity, $pivotSetter)) {
+                            $relEntity->{$pivotSetter}($pivot);
+                        } elseif ($pivotAccessor === 'pivot' && method_exists($relEntity, 'setPivot')) {
+                            // совместимость/фолбэк
+                            $relEntity->setPivot($pivot);
+                        }
+                    }
+
+                    $list[] = $relEntity;
                 }
             }
 
@@ -714,7 +756,7 @@ final class EntityManager implements EntityManagerInterface
             $p = $row[$relation->firstKey] ?? null;
             $t = $row[$relation->secondKey] ?? null;
 
-            if ($p === null || $t === null || !is_scalar($p) || !is_scalar($t)) {
+            if (!is_scalar($p) || !is_scalar($t)) {
                 continue;
             }
 
@@ -725,8 +767,8 @@ final class EntityManager implements EntityManagerInterface
         }
 
         $targetRepo = $this->repository($relation->targetEntity);
-        if (!$targetRepo instanceof AbstractEntityRepository) {
-            throw new InvalidArgumentException('HasManyThrough requires target repository to extend AbstractEntityRepository (batch hydrate).');
+        if (!$targetRepo instanceof BulkEntityRepositoryInterface) {
+            throw new InvalidArgumentException('HasManyThrough requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
         }
 
         $targetEntities = $targetRepo->findManyByColumn(
@@ -762,6 +804,180 @@ final class EntityManager implements EntityManagerInterface
                 }
             }
 
+            $this->writeProperty($entity, $relationProperty, new EntityCollection($list));
+        }
+    }
+
+    /**
+     * MorphTo: Comment -> (Post|Video|...).
+     * Поддерживает batch-загрузку, группируя сущности по typeColumn.
+     *
+     * @param list<EntityInterface> $entities
+     */
+    private function loadMorphTo(array $entities, string $relationProperty, RelationMetadata $relation): void
+    {
+        if ($relation->morphTypeColumn === null || $relation->morphIdColumn === null) {
+            throw new InvalidArgumentException('MorphTo relation must define typeColumn and idColumn');
+        }
+
+        /** @var array<string, array<string, int|string>> $idsByType */
+        $idsByType = [];
+
+        /** @var array<int, array{type: string, id: int|string}> $refs */
+        $refs = [];
+
+        foreach ($entities as $entity) {
+            $row = $this->mapper->extract($entity);
+
+            $type = $row[$relation->morphTypeColumn] ?? null;
+            $id = $row[$relation->morphIdColumn] ?? null;
+
+            if (!is_string($type) || $type === '' || $id === null || !is_scalar($id)) {
+                $this->writeProperty($entity, $relationProperty, null);
+                continue;
+            }
+
+            $idsByType[$type] ??= [];
+            $idsByType[$type][(string) $id] = $id;
+
+            $refs[spl_object_id($entity)] = ['type' => $type, 'id' => $id];
+        }
+
+        if ($idsByType === []) {
+            return;
+        }
+
+        /** @var array<string, array<string, EntityInterface>> $resolved */
+        $resolved = [];
+
+        foreach ($idsByType as $typeValue => $idsMap) {
+            $targetClass = $relation->morphMap[$typeValue] ?? null;
+            if (!is_string($targetClass) || $targetClass === '') {
+                continue;
+            }
+
+            $repo = $this->repository($targetClass);
+            if (!$repo instanceof BulkEntityRepositoryInterface) {
+                throw new InvalidArgumentException('MorphTo requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
+            }
+
+            $targetMeta = $this->metadata->for($targetClass);
+
+            $pkProperty = $targetMeta->pkProperties[0] ?? 'id';
+            $pkColumn = $this->columnPropertyMapper->propertyToColumn($targetClass, $pkProperty) ?? $pkProperty;
+
+            $targets = $repo->findManyByColumn(
+                ids: array_values($idsMap),
+                column: $pkColumn,
+                withDeleted: false,
+            );
+
+            foreach ($targets->all() as $t) {
+                $tId = $this->readAnyProperty($t, $pkProperty);
+
+                if (is_object($tId) && method_exists($tId, 'toString')) {
+                    $tId = $tId->toString();
+                }
+
+                if ($tId !== null && is_scalar($tId)) {
+                    $resolved[$typeValue] ??= [];
+                    $resolved[$typeValue][(string) $tId] = $t;
+                }
+            }
+        }
+
+        foreach ($entities as $entity) {
+            $ref = $refs[spl_object_id($entity)] ?? null;
+            if ($ref === null) {
+                continue;
+            }
+
+            $typeValue = $ref['type'];
+            $idKey = (string) $ref['id'];
+
+            $this->writeProperty(
+                $entity,
+                $relationProperty,
+                $resolved[$typeValue][$idKey] ?? null,
+            );
+        }
+    }
+
+    /**
+     * MorphMany: Post -> comments (Comment.commentable_type = 'post' AND commentable_id IN (...)).
+     *
+     * @param list<EntityInterface> $entities
+     */
+    private function loadMorphMany(array $entities, string $relationProperty, RelationMetadata $relation): void
+    {
+        if ($relation->morphTypeColumn === null || $relation->morphIdColumn === null || $relation->morphTypeValue === null) {
+            throw new InvalidArgumentException('MorphMany relation must define typeColumn, idColumn and typeValue');
+        }
+
+        $parentIds = [];
+        foreach ($entities as $entity) {
+            $id = $this->readProperty($entity, $relation->localKey);
+            if (is_object($id) && method_exists($id, 'toString')) {
+                $id = $id->toString();
+            }
+            if ($id !== null && is_scalar($id)) {
+                $parentIds[(string) $id] = $id;
+            }
+        }
+
+        if ($parentIds === []) {
+            foreach ($entities as $entity) {
+                $this->writeProperty($entity, $relationProperty, new EntityCollection([]));
+            }
+            return;
+        }
+
+        $targetRepo = $this->repository($relation->targetEntity);
+        if (!$targetRepo instanceof BulkEntityRepositoryInterface) {
+            throw new InvalidArgumentException('MorphMany requires target repository to implement BulkEntityRepositoryInterface (batch hydrate).');
+        }
+
+        $targetMeta = $this->metadata->for($relation->targetEntity);
+
+        $rows = $this->connection
+            ->query()
+            ->select(['*'])
+            ->from($targetMeta->table)
+            ->where(
+                $relation->morphTypeColumn . ' = :__psb_morph_type',
+                ['__psb_morph_type' => $relation->morphTypeValue],
+            )
+            ->whereIn($relation->morphIdColumn, array_values($parentIds))
+            ->fetchAll();
+
+        $children = $targetRepo->hydrateManyRows($rows);
+
+        /** @var array<string, list<EntityInterface>> $map */
+        $map = [];
+
+        $fkProperty = $this->columnPropertyMapper->columnToProperty($relation->targetEntity, $relation->morphIdColumn);
+
+        foreach ($children->all() as $child) {
+            $fk = $fkProperty !== null ? $this->readAnyProperty($child, $fkProperty) : null;
+
+            if (is_object($fk) && method_exists($fk, 'toString')) {
+                $fk = $fk->toString();
+            }
+            if (!is_scalar($fk)) {
+                continue;
+            }
+
+            $map[(string) $fk] ??= [];
+            $map[(string) $fk][] = $child;
+        }
+
+        foreach ($entities as $entity) {
+            $id = $this->readProperty($entity, $relation->localKey);
+            if (is_object($id) && method_exists($id, 'toString')) {
+                $id = $id->toString();
+            }
+
+            $list = ($id !== null && isset($map[(string) $id])) ? $map[(string) $id] : [];
             $this->writeProperty($entity, $relationProperty, new EntityCollection($list));
         }
     }
@@ -899,5 +1115,65 @@ final class EntityManager implements EntityManagerInterface
     public function metadataProvider(): MetadataProviderInterface
     {
         return $this->metadata;
+    }
+
+    public function refresh(EntityInterface $entity): void
+    {
+        $id = $entity->id();
+        if ($id === null) {
+            throw new InvalidArgumentException('Cannot refresh entity without identifier (id is null).');
+        }
+
+        $repo = $this->repository($entity::class);
+
+        if (!$repo instanceof EntityRepositoryInterface) {
+            throw new InvalidArgumentException('Repository for entity ' . $entity::class . ' does not support refresh().');
+        }
+
+        // Читаем строку напрямую из БД, чтобы не попасть на 1st-level cache / IdentityMap.
+        $meta = $this->metadata->for($entity::class);
+
+        $pkProperty = $meta->pkProperties[0] ?? 'id';
+        $pkColumn = $this->columnPropertyMapper->propertyToColumn($entity::class, $pkProperty) ?? $pkProperty;
+
+        $pkValue = $id instanceof UuidInterface ? $id->toString() : $id;
+
+        $row = $this->queryFor($entity::class, withDeleted: true)
+            ->where($pkColumn . ' = :__orm_refresh_pk', ['__orm_refresh_pk' => $pkValue])
+            ->limit(1)
+            ->fetchOne();
+
+        if ($row === null) {
+            throw new InvalidArgumentException('Cannot refresh entity: row not found for id=' . (is_object($id) && method_exists($id, 'toString') ? $id->toString() : (string) $id));
+        }
+
+        // Присваиваем значения в entity по именам свойств (а не по колонкам).
+        foreach ($row as $column => $value) {
+            $property = $this->columnPropertyMapper->columnToProperty($entity::class, (string) $column) ?? (string) $column;
+
+            if (property_exists($entity, $property)) {
+                $entity->{$property} = $value;
+            }
+        }
+
+        // После refresh сущность считаем Managed, а snapshot обновляем на текущее состояние.
+        $this->unitOfWork->markManaged($entity);
+
+        try {
+            $this->unitOfWork->takeSnapshot($entity, $this->mapper->extract($entity));
+        } catch (InvalidArgumentException) {
+            // unmapped entity - snapshot не делаем
+        }
+    }
+
+    public function pivot(EntityInterface $owner, string $relationProperty): PivotRelationManager
+    {
+        $writer = new PivotRelationWriter($this);
+
+        return new PivotRelationManager(
+            writer: $writer,
+            owner: $owner,
+            relationProperty: $relationProperty,
+        );
     }
 }

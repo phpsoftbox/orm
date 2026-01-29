@@ -6,7 +6,7 @@ namespace PhpSoftBox\Orm\Repository;
 
 use PhpSoftBox\Orm\Collection\EntityCollection;
 use PhpSoftBox\Orm\Contracts\EntityInterface;
-use PhpSoftBox\Orm\Contracts\EntityRepositoryInterface;
+use PhpSoftBox\Orm\Contracts\BulkEntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\IdentifierInterface;
 use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
 use PhpSoftBox\Orm\Identifier\SingleIdentifier;
@@ -23,7 +23,7 @@ use function count;
  * @template TEntity of EntityInterface
  * @extends AbstractRepository<TEntity>
  */
-abstract class AbstractEntityRepository extends AbstractRepository implements EntityRepositoryInterface
+abstract class AbstractEntityRepository extends AbstractRepository implements BulkEntityRepositoryInterface
 {
     /**
      * Имя таблицы (без префикса). Префикс добавляется через ConnectionInterface::table().
