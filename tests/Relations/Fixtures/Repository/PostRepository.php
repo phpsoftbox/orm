@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PhpSoftBox\Orm\Tests\Relations\Fixtures\Repository;
+
+use PhpSoftBox\Orm\Contracts\EntityInterface;
+use PhpSoftBox\Orm\Repository\AbstractEntityRepository;
+use PhpSoftBox\Orm\Tests\Relations\Fixtures\Post;
+
+/**
+ * @extends AbstractEntityRepository<Post>
+ */
+final class PostRepository extends AbstractEntityRepository
+{
+    protected function entityClass(): string
+    {
+        return Post::class;
+    }
+
+    protected function table(): string
+    {
+        return 'posts_rel';
+    }
+
+    protected function hydrate(array $row): EntityInterface
+    {
+        return new Post(
+            id: (int) $row['id'],
+            authorId: (int) $row['author_id'],
+        );
+    }
+
+    protected function extract(EntityInterface $entity): array
+    {
+        /** @var Post $entity */
+        return [
+            'id' => $entity->id,
+            'author_id' => $entity->authorId,
+        ];
+    }
+
+    protected function doPersist(EntityInterface $entity): void {}
+
+    protected function doRemove(EntityInterface $entity): void {}
+}
+
