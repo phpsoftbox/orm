@@ -9,6 +9,8 @@ use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\UuidInterface;
 
+use function is_string;
+
 final class UuidHandler implements OrmTypeHandlerInterface
 {
     public function supports(string $type): bool

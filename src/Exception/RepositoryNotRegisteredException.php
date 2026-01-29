@@ -7,4 +7,3 @@ namespace PhpSoftBox\Orm\Exception;
 class RepositoryNotRegisteredException extends OrmException
 {
 }
-

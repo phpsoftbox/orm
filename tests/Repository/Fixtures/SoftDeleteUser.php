@@ -18,10 +18,8 @@ final class SoftDeleteUser implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $name,
-
         #[Column(type: 'datetime', nullable: true)]
         public ?string $deletedDatetime = null,
     ) {
@@ -32,4 +30,3 @@ final class SoftDeleteUser implements EntityInterface
         return $this->id;
     }
 }
-

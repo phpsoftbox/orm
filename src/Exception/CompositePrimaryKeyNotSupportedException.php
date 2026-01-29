@@ -7,4 +7,3 @@ namespace PhpSoftBox\Orm\Exception;
 final class CompositePrimaryKeyNotSupportedException extends OrmException
 {
 }
-

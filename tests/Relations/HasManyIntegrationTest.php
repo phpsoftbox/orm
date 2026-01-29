@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests\Relations;
 
+use PDO;
 use PhpSoftBox\Database\Connection\Connection;
 use PhpSoftBox\Database\Driver\SqliteDriver;
 use PhpSoftBox\Orm\Collection\EntityCollection;
@@ -11,10 +12,11 @@ use PhpSoftBox\Orm\EntityManager;
 use PhpSoftBox\Orm\Repository\AbstractEntityRepository;
 use PhpSoftBox\Orm\Tests\Relations\Fixtures\PostWithComments;
 use PhpSoftBox\Orm\UnitOfWork\InMemoryUnitOfWork;
-use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+
+use function array_map;
 
 #[CoversClass(EntityManager::class)]
 final class HasManyIntegrationTest extends TestCase
@@ -27,43 +29,44 @@ final class HasManyIntegrationTest extends TestCase
     public function eagerLoadsHasMany(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts_comments (
                     id INTEGER PRIMARY KEY,
                     title VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE comments (
                     id INTEGER PRIMARY KEY,
                     post_id INTEGER NOT NULL,
                     body VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
             "
                 INSERT INTO posts_comments (id, title) VALUES (1, 'Hello')
-            "
+            ",
         );
         $conn->execute(
             "
                 INSERT INTO comments (id, post_id, body) VALUES (10, 1, 'a')
-            "
+            ",
         );
         $conn->execute(
             "
                 INSERT INTO comments (id, post_id, body) VALUES (11, 1, 'b')
-            "
+            ",
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new InMemoryUnitOfWork());

@@ -6,10 +6,10 @@ namespace PhpSoftBox\Orm\Tests\Metadata;
 
 use PhpSoftBox\Orm\EntityManagerConfig;
 use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
-use PhpSoftBox\Orm\Tests\Metadata\Fixtures\EntityWithoutTable;
-use PhpSoftBox\Orm\Tests\Metadata\Fixtures\UserWithBelongsToManyDefaults;
 use PhpSoftBox\Orm\Tests\Metadata\Fixtures\Country;
+use PhpSoftBox\Orm\Tests\Metadata\Fixtures\EntityWithoutTable;
 use PhpSoftBox\Orm\Tests\Metadata\Fixtures\RoleBelongsToManyUsersWithPivotOwner;
+use PhpSoftBox\Orm\Tests\Metadata\Fixtures\UserWithBelongsToManyDefaults;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -25,6 +25,7 @@ final class EntityTableConventionTest extends TestCase
     public function entityWithoutTableUsesClassNameConvention(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
 
         $meta = $provider->for(EntityWithoutTable::class);
@@ -39,6 +40,7 @@ final class EntityTableConventionTest extends TestCase
     public function belongsToManyDefaultsAreGuessed(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
 
         $meta = $provider->for(UserWithBelongsToManyDefaults::class);
@@ -59,6 +61,7 @@ final class EntityTableConventionTest extends TestCase
     public function hasManyThroughDefaultsAreGuessed(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
 
         $meta = $provider->for(Country::class);
@@ -81,6 +84,7 @@ final class EntityTableConventionTest extends TestCase
     public function belongsToManyPivotOwnerForcesOwnerFirstPivotTable(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
 
         $meta = $provider->for(RoleBelongsToManyUsersWithPivotOwner::class);

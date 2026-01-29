@@ -7,9 +7,11 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 
-use function is_int;
 use function is_float;
+use function is_int;
 use function is_string;
+use function rtrim;
+use function str_contains;
 
 /**
  * Decimal handler.

@@ -16,7 +16,9 @@ final class MetadataColumnPropertyMapper implements ColumnPropertyMapperInterfac
      */
     private array $columnToPropertyCache = [];
 
-    public function __construct(private readonly MetadataProviderInterface $metadata)
+    public function __construct(
+        private readonly MetadataProviderInterface
+    $metadata)
     {
     }
 
@@ -24,6 +26,7 @@ final class MetadataColumnPropertyMapper implements ColumnPropertyMapperInterfac
     {
         try {
             $map = $this->columnToPropertyCache[$entityClass] ??= $this->buildColumnToPropertyMap($entityClass);
+
             return $map[$column] ?? null;
         } catch (Throwable) {
             return null;
@@ -34,6 +37,7 @@ final class MetadataColumnPropertyMapper implements ColumnPropertyMapperInterfac
     {
         try {
             $meta = $this->metadata->for($entityClass);
+
             return $meta->columns[$property]->column ?? null;
         } catch (Throwable) {
             return null;

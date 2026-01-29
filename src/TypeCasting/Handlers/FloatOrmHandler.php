@@ -6,6 +6,9 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 
 use InvalidArgumentException;
 
+use function is_float;
+use function is_numeric;
+
 final class FloatOrmHandler extends AbstractOrmTypeHandler
 {
     public function supports(string $type): bool
@@ -30,4 +33,3 @@ final class FloatOrmHandler extends AbstractOrmTypeHandler
         throw new InvalidArgumentException('Cannot cast value to float');
     }
 }
-

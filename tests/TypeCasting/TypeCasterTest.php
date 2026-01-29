@@ -6,12 +6,11 @@ namespace PhpSoftBox\Orm\Tests\TypeCasting;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use PhpSoftBox\Orm\Metadata\PropertyMetadata;
 use PhpSoftBox\Orm\TypeCasting\DefaultTypeCasterFactory;
 use PhpSoftBox\Orm\TypeCasting\Handlers\DateTimeHandler;
 use PhpSoftBox\Orm\TypeCasting\Handlers\UuidHandler;
-use PhpSoftBox\Orm\TypeCasting\TypeCaster;
 use PhpSoftBox\Orm\TypeCasting\OrmTypeCaster;
+use PhpSoftBox\Orm\TypeCasting\TypeCaster;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -81,16 +80,16 @@ final class TypeCasterTest extends TestCase
     #[Test]
     public function castArrayCastsConfiguredKeys(): void
     {
-        $caster = (new DefaultTypeCasterFactory())->create();
+        $caster = new DefaultTypeCasterFactory()->create();
 
         $casted = $caster->castArray([
             'key1' => 'datetime',
             'key2' => 'uuid',
             'key3' => 'json',
         ], [
-            'key1' => '2022-01-01T00:00:00+00:00',
-            'key2' => '123e4567-e89b-12d3-a456-426655440000',
-            'key3' => ['a' => 1],
+            'key1'      => '2022-01-01T00:00:00+00:00',
+            'key2'      => '123e4567-e89b-12d3-a456-426655440000',
+            'key3'      => ['a' => 1],
             'untouched' => 123,
         ]);
 

@@ -36,7 +36,7 @@ final class PostBelongsToRepository extends AbstractEntityRepository
     {
         /** @var PostBelongsTo $entity */
         return [
-            'id' => $entity->id,
+            'id'        => $entity->id,
             'author_id' => $entity->authorId,
         ];
     }

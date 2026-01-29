@@ -38,10 +38,10 @@ final class CommentWithAuthorRepository extends AbstractEntityRepository
     {
         /** @var CommentWithAuthor $entity */
         return [
-            'id' => $entity->id,
-            'post_id' => $entity->postId,
+            'id'        => $entity->id,
+            'post_id'   => $entity->postId,
             'author_id' => $entity->authorId,
-            'body' => $entity->body,
+            'body'      => $entity->body,
         ];
     }
 

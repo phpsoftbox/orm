@@ -18,10 +18,8 @@ final class PostWithSlugOnUpdate implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $title,
-
         #[Column(type: 'string')]
         public string $slug,
     ) {

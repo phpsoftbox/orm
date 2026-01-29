@@ -6,6 +6,11 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 
+use function is_bool;
+use function is_float;
+use function is_int;
+use function is_string;
+
 /**
  * Базовый ORM handler с pass-through реализацией.
  *
@@ -38,4 +43,3 @@ abstract class AbstractOrmTypeHandler implements OrmTypeHandlerInterface
         return $this->castFrom($value);
     }
 }
-

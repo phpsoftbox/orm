@@ -7,8 +7,8 @@ namespace PhpSoftBox\Orm\Tests;
 use PhpSoftBox\Orm\Contracts\EntityRepositoryInterface;
 use PhpSoftBox\Orm\IdentityMap\WeakIdentityMap;
 use PhpSoftBox\Orm\Tests\Fixtures\User;
-use PhpSoftBox\Orm\UnitOfWork\EntityState;
 use PhpSoftBox\Orm\UnitOfWork\AdvancedUnitOfWork;
+use PhpSoftBox\Orm\UnitOfWork\EntityState;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -24,13 +24,17 @@ final class SmartUnitOfWorkTest extends TestCase
     public function idNullIsNewWithoutRepositoryCall(): void
     {
         $identityMap = new WeakIdentityMap();
+
         $uow = new AdvancedUnitOfWork($identityMap);
 
         $repo = $this->createMock(EntityRepositoryInterface::class);
         $repo->expects(self::never())->method('exists');
 
-        $entity = new class implements \PhpSoftBox\Orm\Contracts\EntityInterface {
-            public function id(): int|\Ramsey\Uuid\UuidInterface|null { return null; }
+        $entity = new class () implements \PhpSoftBox\Orm\Contracts\EntityInterface {
+            public function id(): int|\Ramsey\Uuid\UuidInterface|null
+            {
+                return null;
+            }
         };
 
         self::assertSame(EntityState::New, $uow->resolveForPersist($entity, $repo));
@@ -43,6 +47,7 @@ final class SmartUnitOfWorkTest extends TestCase
     public function idNotNullButNotExistsIsNew(): void
     {
         $identityMap = new WeakIdentityMap();
+
         $uow = new AdvancedUnitOfWork($identityMap);
 
         $id = Uuid::uuid7();
@@ -65,6 +70,7 @@ final class SmartUnitOfWorkTest extends TestCase
     public function idNotNullAndExistsIsManaged(): void
     {
         $identityMap = new WeakIdentityMap();
+
         $uow = new AdvancedUnitOfWork($identityMap);
 
         $id = Uuid::uuid7();
@@ -87,9 +93,10 @@ final class SmartUnitOfWorkTest extends TestCase
     public function existsIsCached(): void
     {
         $identityMap = new WeakIdentityMap();
+
         $uow = new AdvancedUnitOfWork($identityMap);
 
-        $id = Uuid::uuid7();
+        $id   = Uuid::uuid7();
         $user = new User($id, 'u');
 
         $repo = $this->createMock(EntityRepositoryInterface::class);
@@ -102,5 +109,3 @@ final class SmartUnitOfWorkTest extends TestCase
         self::assertSame(EntityState::Managed, $uow->resolveForPersist($user, $repo));
     }
 }
-
-

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\TypeCasting\Options;
 
-use PhpSoftBox\Orm\TypeCasting\Options\JsonInvalidPolicy;
-
 final readonly class JsonCastOptions implements TypeCastingOptionsInterface
 {
     public function __construct(
@@ -20,8 +18,7 @@ final readonly class JsonCastOptions implements TypeCastingOptionsInterface
         return [
             'json_encode_flags' => $this->jsonEncodeFlags,
             'json_decode_flags' => $this->jsonDecodeFlags,
-            'invalid_json' => $this->invalidJson->value,
+            'invalid_json'      => $this->invalidJson->value,
         ];
     }
 }
-

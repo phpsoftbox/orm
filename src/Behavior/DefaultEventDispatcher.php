@@ -6,10 +6,10 @@ namespace PhpSoftBox\Orm\Behavior;
 
 use PhpSoftBox\Orm\Behavior\Attributes\Listen;
 use PhpSoftBox\Orm\Behavior\Command\EntityCommandInterface;
-
 use ReflectionClass;
 
 use function is_callable;
+use function str_starts_with;
 
 /**
  * Простой синхронный диспетчер событий ORM.

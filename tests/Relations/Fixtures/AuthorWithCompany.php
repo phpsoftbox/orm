@@ -17,13 +17,10 @@ final class AuthorWithCompany implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $name,
-
         #[Column(name: 'company_id', type: 'int')]
         public int $companyId,
-
         #[ManyToOne(targetEntity: Company::class, joinColumn: 'companyId')]
         public ?Company $company = null,
     ) {
@@ -34,4 +31,3 @@ final class AuthorWithCompany implements EntityInterface
         return $this->id;
     }
 }
-

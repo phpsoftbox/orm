@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests;
 
+use LogicException;
 use PhpSoftBox\Database\Database;
-use PhpSoftBox\Orm\Tests\Fixtures\User;
-use PhpSoftBox\Orm\Tests\Utils\IntegrationDatabases;
 use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
 use PhpSoftBox\Orm\Identifier\SingleIdentifier;
 use PhpSoftBox\Orm\Repository\AbstractEntityRepository;
+use PhpSoftBox\Orm\Tests\Fixtures\User;
 use PhpSoftBox\Orm\Tests\Fixtures\UserRepository;
+use PhpSoftBox\Orm\Tests\Utils\IntegrationDatabases;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -146,22 +147,22 @@ final class AbstractEntityRepositoryTest extends TestCase
 
             protected function hydrate(array $row): \PhpSoftBox\Orm\Contracts\EntityInterface
             {
-                throw new \LogicException('not needed for this test');
+                throw new LogicException('not needed for this test');
             }
 
             protected function extract(\PhpSoftBox\Orm\Contracts\EntityInterface $entity): array
             {
-                throw new \LogicException('not needed for this test');
+                throw new LogicException('not needed for this test');
             }
 
             protected function doPersist(\PhpSoftBox\Orm\Contracts\EntityInterface $entity): void
             {
-                throw new \LogicException('not needed for this test');
+                throw new LogicException('not needed for this test');
             }
 
             protected function doRemove(\PhpSoftBox\Orm\Contracts\EntityInterface $entity): void
             {
-                throw new \LogicException('not needed for this test');
+                throw new LogicException('not needed for this test');
             }
         };
 

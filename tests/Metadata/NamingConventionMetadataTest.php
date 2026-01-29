@@ -23,7 +23,9 @@ final class NamingConventionMetadataTest extends TestCase
     public function joinColumnIsEntityPropertyAndColumnNameIsSnakeCase(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
+
         $meta = $provider->for(PostBelongsTo::class);
 
         self::assertArrayHasKey('authorId', $meta->columns);

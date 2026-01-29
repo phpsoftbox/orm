@@ -10,7 +10,6 @@ use PhpSoftBox\Orm\Repository\AutoEntityMapper;
 use PhpSoftBox\Orm\Tests\Repository\Fixtures\MappedEntity;
 use PhpSoftBox\Orm\TypeCasting\DefaultTypeCasterFactory;
 use PhpSoftBox\Orm\TypeCasting\Options\TypeCastOptionsManager;
-use PhpSoftBox\Orm\TypeCasting\OrmTypeCaster;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -27,12 +26,12 @@ final class AutoEntityMapperTest extends TestCase
     public function hydrateCastsValuesUsingTypeCaster(): void
     {
         $metadata = new AttributeMetadataProvider();
-        $caster = new DefaultTypeCasterFactory()->create();
+        $caster   = new DefaultTypeCasterFactory()->create();
 
         $mapper = new AutoEntityMapper($metadata, $caster, new TypeCastOptionsManager());
 
         $row = [
-            'id' => '123e4567-e89b-12d3-a456-426655440000',
+            'id'      => '123e4567-e89b-12d3-a456-426655440000',
             'created' => '2022-01-01T00:00:00+00:00',
         ];
 
@@ -52,12 +51,13 @@ final class AutoEntityMapperTest extends TestCase
     public function extractCastsValuesUsingTypeCaster(): void
     {
         $metadata = new AttributeMetadataProvider();
-        $caster = (new DefaultTypeCasterFactory())->create();
+        $caster   = new DefaultTypeCasterFactory()->create();
 
         $mapper = new AutoEntityMapper($metadata, $caster, new TypeCastOptionsManager());
 
         $entity = new MappedEntity();
-        $entity->id = Uuid::fromString('123e4567-e89b-12d3-a456-426655440000');
+
+        $entity->id      = Uuid::fromString('123e4567-e89b-12d3-a456-426655440000');
         $entity->created = new DateTimeImmutable('2022-01-01T00:00:00+00:00');
 
         $data = $mapper->extract($entity);

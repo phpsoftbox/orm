@@ -11,6 +11,8 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
+use function strtolower;
+
 #[CoversClass(EntityManagerConfig::class)]
 final class EntityManagerConfigNamingConventionTest extends TestCase
 {
@@ -34,7 +36,7 @@ final class EntityManagerConfigNamingConventionTest extends TestCase
     #[Test]
     public function doesNotOverrideProvidedNamingConvention(): void
     {
-        $custom = new class implements NamingConventionInterface {
+        $custom = new class () implements NamingConventionInterface {
             public function entityTable(string $entityClassShortName): string
             {
                 return 'x_' . strtolower($entityClassShortName);

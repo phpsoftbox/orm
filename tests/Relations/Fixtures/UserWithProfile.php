@@ -17,10 +17,8 @@ final class UserWithProfile implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $name,
-
         #[HasOne(targetEntity: Profile::class, foreignKey: 'user_id', localKey: 'id')]
         public ?Profile $profile = null,
     ) {
@@ -31,4 +29,3 @@ final class UserWithProfile implements EntityInterface
         return $this->id;
     }
 }
-

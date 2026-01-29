@@ -20,9 +20,9 @@ final readonly class BoolCastOptions implements TypeCastingOptionsInterface
     public function toArray(): array
     {
         return [
-            'true_values' => $this->trueValues,
+            'true_values'  => $this->trueValues,
             'false_values' => $this->falseValues,
-            'strict' => $this->strict,
+            'strict'       => $this->strict,
         ];
     }
 }

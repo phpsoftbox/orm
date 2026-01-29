@@ -24,4 +24,3 @@ final class UserEntity
     #[NotMapped]
     public string $computed;
 }
-

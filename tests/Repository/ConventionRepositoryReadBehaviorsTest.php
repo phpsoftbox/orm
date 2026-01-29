@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests\Repository;
 
+use PDO;
 use PhpSoftBox\Database\Connection\Connection;
 use PhpSoftBox\Database\Driver\SqliteDriver;
 use PhpSoftBox\Orm\EntityManager;
 use PhpSoftBox\Orm\Tests\Repository\Fixtures\SoftDeleteUser;
 use PhpSoftBox\Orm\UnitOfWork\InMemoryUnitOfWork;
-use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -26,18 +26,19 @@ final class ConventionRepositoryReadBehaviorsTest extends TestCase
     public function conventionRepositoryUsesReadBehaviors(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE sd_users (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     deleted_datetime VARCHAR(64) NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
@@ -46,7 +47,7 @@ final class ConventionRepositoryReadBehaviorsTest extends TestCase
                 VALUES
                     (1, 'Alive', NULL),
                     (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            "
+            ",
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new InMemoryUnitOfWork());
@@ -66,4 +67,3 @@ final class ConventionRepositoryReadBehaviorsTest extends TestCase
         self::assertNull($foundDeleted);
     }
 }
-

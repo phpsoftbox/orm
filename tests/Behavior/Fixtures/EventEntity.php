@@ -22,7 +22,6 @@ final class EventEntity implements EntityInterface
         #[GeneratedValue(strategy: 'auto')]
         #[Column(type: 'int')]
         public ?int $id = null,
-
         #[Column(type: 'string')]
         public string $name = '',
     ) {

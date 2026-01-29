@@ -7,20 +7,20 @@ namespace PhpSoftBox\Orm\Tests;
 use PhpSoftBox\Database\Contracts\ConnectionInterface;
 use PhpSoftBox\Orm\EntityManager;
 use PhpSoftBox\Orm\Exception\RepositoryNotRegisteredException;
+use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
+use PhpSoftBox\Orm\Persistence\EntityPersisterInterface;
 use PhpSoftBox\Orm\Repository\DefaultRepositoryResolver;
 use PhpSoftBox\Orm\Repository\RepositoryClassFactory;
 use PhpSoftBox\Orm\Tests\Fixtures\App\Entity\UserEntity;
 use PhpSoftBox\Orm\Tests\Fixtures\App\Repository\UserEntityRepository;
+use PhpSoftBox\Orm\Tests\Fixtures\NoEntityAttribute;
+use PhpSoftBox\Orm\Tests\Fixtures\Repository\UserRepository;
 use PhpSoftBox\Orm\Tests\Fixtures\SpyExistingRepository;
 use PhpSoftBox\Orm\Tests\Fixtures\User;
-use PhpSoftBox\Orm\Tests\Fixtures\Repository\UserRepository;
-use PhpSoftBox\Orm\Tests\Fixtures\NoEntityAttribute;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
-use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
-use PhpSoftBox\Orm\Persistence\EntityPersisterInterface;
 
 #[CoversClass(EntityManager::class)]
 final class EntityManagerTest extends TestCase

@@ -17,16 +17,12 @@ final class CommentWithAuthor implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'post_id', type: 'int')]
         public int $postId,
-
         #[Column(name: 'author_id', type: 'int')]
         public int $authorId,
-
         #[Column(type: 'string')]
         public string $body,
-
         #[ManyToOne(targetEntity: AuthorNested::class, joinColumn: 'authorId', referencedColumn: 'id')]
         public ?AuthorNested $author = null,
     ) {

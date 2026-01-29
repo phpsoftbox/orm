@@ -50,7 +50,7 @@ interface NamingConventionInterface
     public function belongsToManyPivotKey(string $table): string;
 
     /**
-     * Имя firstKey для hasManyThrough по имени таблицы ис��очника.
+     * Имя firstKey для hasManyThrough по имени таблицы источника.
      *
      * Пример: countries -> country_id
      */

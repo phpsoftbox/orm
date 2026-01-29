@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Repository;
 
+use PhpSoftBox\Database\QueryBuilder\SelectQueryBuilder;
 use PhpSoftBox\Orm\Collection\EntityCollection;
+use PhpSoftBox\Orm\Contracts\BulkEntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\EntityInterface;
-use PhpSoftBox\Orm\Contracts\EntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\IdentifierInterface;
 use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
 use PhpSoftBox\Orm\Identifier\SingleIdentifier;
-use PhpSoftBox\Database\QueryBuilder\SelectQueryBuilder;
 use Ramsey\Uuid\UuidInterface;
 
+use function array_key_exists;
 use function array_map;
 use function array_values;
 use function count;
+use function is_array;
 
 /**
  * Базовый репозиторий для сущностей.
@@ -23,7 +25,7 @@ use function count;
  * @template TEntity of EntityInterface
  * @extends AbstractRepository<TEntity>
  */
-abstract class AbstractEntityRepository extends AbstractRepository implements EntityRepositoryInterface
+abstract class AbstractEntityRepository extends AbstractRepository implements BulkEntityRepositoryInterface
 {
     /**
      * Имя таблицы (без префикса). Префикс добавляется через ConnectionInterface::table().
@@ -135,8 +137,9 @@ abstract class AbstractEntityRepository extends AbstractRepository implements En
      */
     public function with(array $relations): static
     {
-        $clone = clone $this;
+        $clone                = clone $this;
         $clone->withRelations = $relations;
+
         return $clone;
     }
 
@@ -194,8 +197,8 @@ abstract class AbstractEntityRepository extends AbstractRepository implements En
 
         $identifier = match (true) {
             $id instanceof IdentifierInterface => $id,
-            is_array($id) => $this->identifierFromArray($id),
-            default => new SingleIdentifier($pk, $id),
+            is_array($id)                      => $this->identifierFromArray($id),
+            default                            => new SingleIdentifier($pk, $id),
         };
 
         $values = $identifier->values();
@@ -218,7 +221,7 @@ abstract class AbstractEntityRepository extends AbstractRepository implements En
         $param = '__orm_pk';
 
         return [
-            'sql' => $pk . ' = :' . $param,
+            'sql'    => $pk . ' = :' . $param,
             'params' => [$param => $value],
         ];
     }

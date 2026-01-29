@@ -33,6 +33,7 @@ final readonly class DefaultRepositoryResolver implements RepositoryResolverInte
         if ($meta?->repository !== null) {
             /** @var class-string<RepositoryInterface> $repoClass */
             $repoClass = $meta->repository;
+
             return $repoClass;
         }
 
@@ -64,12 +65,14 @@ final readonly class DefaultRepositoryResolver implements RepositoryResolverInte
     private function shortName(string $class): string
     {
         $pos = strrpos($class, '\\');
+
         return $pos === false ? $class : substr($class, $pos + 1);
     }
 
     private function namespace(string $class): ?string
     {
         $pos = strrpos($class, '\\');
+
         return $pos === false ? null : substr($class, 0, $pos);
     }
 }

@@ -11,7 +11,9 @@ use PhpSoftBox\Inflector\Contracts\InflectorInterface;
  */
 final readonly class InflectorNamingConvention implements NamingConventionInterface
 {
-    public function __construct(private InflectorInterface $inflector)
+    public function __construct(
+        private InflectorInterface
+    $inflector)
     {
     }
 

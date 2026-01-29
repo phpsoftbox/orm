@@ -17,10 +17,8 @@ final class PostBelongsTo implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'author_id', type: 'int')]
         public int $authorId,
-
         #[BelongsTo(targetEntity: Author::class, joinColumn: 'authorId')]
         public ?Author $author = null,
     ) {

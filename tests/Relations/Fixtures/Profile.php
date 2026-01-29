@@ -16,10 +16,8 @@ final class Profile implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'user_id', type: 'int')]
         public int $userId,
-
         #[Column(type: 'string')]
         public string $bio,
     ) {

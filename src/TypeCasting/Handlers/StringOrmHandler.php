@@ -20,4 +20,3 @@ final class StringOrmHandler extends AbstractOrmTypeHandler
         return (string) $value;
     }
 }
-

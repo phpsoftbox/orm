@@ -10,6 +10,9 @@ use PhpSoftBox\Orm\Contracts\EntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\IdentifierInterface;
 use Ramsey\Uuid\UuidInterface;
 
+use function array_values;
+use function is_int;
+
 final class SimpleEntityRepository implements EntityRepositoryInterface
 {
     public int $findCalls = 0;
@@ -59,4 +62,3 @@ final class SimpleEntityRepository implements EntityRepositoryInterface
         // не нужно для теста
     }
 }
-

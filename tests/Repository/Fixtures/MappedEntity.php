@@ -18,4 +18,3 @@ final class MappedEntity
     #[Column(type: 'datetime')]
     public DateTimeImmutable $created;
 }
-

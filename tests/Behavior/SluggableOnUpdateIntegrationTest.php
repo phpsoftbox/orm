@@ -25,23 +25,25 @@ final class SluggableOnUpdateIntegrationTest extends TestCase
     public function slugIsRecomputedOnUpdateWhenEnabled(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts_update (
                     id INTEGER PRIMARY KEY,
                     title VARCHAR(255) NOT NULL,
                     slug VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new AdvancedUnitOfWork(new WeakIdentityMap()));
 
         $post = new PostWithSlugOnUpdate(id: 1, title: 'Hello World', slug: '');
+
         $em->persist($post);
         $em->flush();
 

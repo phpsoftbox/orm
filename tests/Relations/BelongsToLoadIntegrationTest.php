@@ -28,37 +28,38 @@ final class BelongsToLoadIntegrationTest extends TestCase
     public function loadsBelongsToRelation(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE authors (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts_rel (
                     id INTEGER PRIMARY KEY,
                     author_id INTEGER NOT NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
             "
                 INSERT INTO authors (id, name) VALUES (10, 'Anton')
-            "
+            ",
         );
         $conn->execute(
-            "
+            '
                 INSERT INTO posts_rel (id, author_id) VALUES (1, 10)
-            "
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new InMemoryUnitOfWork());
@@ -69,6 +70,7 @@ final class BelongsToLoadIntegrationTest extends TestCase
 
         // 1) load() на одной сущности
         $post = new PostBelongsTo(id: 1, authorId: 10);
+
         $em->load($post, 'author');
 
         self::assertNotNull($post->author);

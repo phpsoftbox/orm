@@ -21,13 +21,10 @@ final class AllTypesPersistEntity implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'datetime', options: new DatetimeCastOptions(formatTo: 'Y-m-d H:i:s', formatFrom: 'Y-m-d H:i:s'))]
         public DateTimeImmutable $created,
-
         #[Column(type: 'enum', options: new EnumCastOptions(enumClass: StatusEnum::class))]
         public StatusEnum $status,
-
         #[Column(type: 'pg_array', options: new PgArrayCastOptions(itemType: 'int'))]
         public array $ids,
     ) {
@@ -38,4 +35,3 @@ final class AllTypesPersistEntity implements EntityInterface
         return $this->id;
     }
 }
-

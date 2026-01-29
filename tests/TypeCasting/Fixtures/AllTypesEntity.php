@@ -31,4 +31,3 @@ final class AllTypesEntity
     #[Column(type: 'pg_array', options: new PgArrayCastOptions(itemType: 'int'))]
     public array $ids;
 }
-

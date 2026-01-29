@@ -36,14 +36,17 @@ final class ProfileRepository extends AbstractEntityRepository
     {
         /** @var Profile $entity */
         return [
-            'id' => $entity->id,
+            'id'      => $entity->id,
             'user_id' => $entity->userId,
-            'bio' => $entity->bio,
+            'bio'     => $entity->bio,
         ];
     }
 
-    protected function doPersist(EntityInterface $entity): void {}
+    protected function doPersist(EntityInterface $entity): void
+    {
+    }
 
-    protected function doRemove(EntityInterface $entity): void {}
+    protected function doRemove(EntityInterface $entity): void
+    {
+    }
 }
-

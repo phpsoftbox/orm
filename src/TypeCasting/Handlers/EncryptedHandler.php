@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\EncryptorInterface;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 
+use function is_string;
+
 /**
  * Примитивный encrypted handler.
  *
@@ -62,4 +64,3 @@ final readonly class EncryptedHandler implements OrmTypeHandlerInterface
         throw new InvalidArgumentException('Encrypted handler requires castFrom/castTo with options.');
     }
 }
-

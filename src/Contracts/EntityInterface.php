@@ -17,7 +17,7 @@ interface EntityInterface
      * Возвращает идентификатор сущности.
      *
      * - Для автоинкремента: null до вставки, int после вставки.
-     * - Для UUID: как правило UuidInterface может быть задан ��разу.
+     * - Для UUID: как правило UuidInterface может быть задан фразу.
      */
     public function id(): int|UuidInterface|null;
 }

@@ -15,9 +15,8 @@ final readonly class DecimalCastOptions implements TypeCastingOptionsInterface
     public function toArray(): array
     {
         return [
-            'scale' => $this->scale,
+            'scale'               => $this->scale,
             'trim_trailing_zeros' => $this->trimTrailingZeros,
         ];
     }
 }
-

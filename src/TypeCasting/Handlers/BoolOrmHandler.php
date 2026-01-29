@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 
 use function in_array;
+use function is_bool;
 
 /**
  * Bool для ORM: понимает разные представления boolean из БД (0/1, t/f, yes/no).
@@ -38,9 +39,9 @@ final class BoolOrmHandler implements OrmTypeHandlerInterface
             return $value;
         }
 
-        $trueValues = $options['true_values'] ?? [true, 1, '1', 'true', 't', 'yes', 'y', 'on'];
+        $trueValues  = $options['true_values'] ?? [true, 1, '1', 'true', 't', 'yes', 'y', 'on'];
         $falseValues = $options['false_values'] ?? [false, 0, '0', 'false', 'f', 'no', 'n', 'off', ''];
-        $strict = (bool) ($options['strict'] ?? false);
+        $strict      = (bool) ($options['strict'] ?? false);
 
         if (in_array($value, $trueValues, true)) {
             return true;
@@ -62,4 +63,3 @@ final class BoolOrmHandler implements OrmTypeHandlerInterface
         return $this->castFrom($value);
     }
 }
-

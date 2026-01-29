@@ -13,4 +13,3 @@ final readonly class DefaultListenerResolver implements ListenerResolverInterfac
         return new $class();
     }
 }
-
