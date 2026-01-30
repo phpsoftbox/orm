@@ -16,7 +16,6 @@ final class Author implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $name,
     ) {
@@ -27,4 +26,3 @@ final class Author implements EntityInterface
         return $this->id;
     }
 }
-

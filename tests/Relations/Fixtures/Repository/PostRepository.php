@@ -35,13 +35,16 @@ final class PostRepository extends AbstractEntityRepository
     {
         /** @var Post $entity */
         return [
-            'id' => $entity->id,
+            'id'        => $entity->id,
             'author_id' => $entity->authorId,
         ];
     }
 
-    protected function doPersist(EntityInterface $entity): void {}
+    protected function doPersist(EntityInterface $entity): void
+    {
+    }
 
-    protected function doRemove(EntityInterface $entity): void {}
+    protected function doRemove(EntityInterface $entity): void
+    {
+    }
 }
-

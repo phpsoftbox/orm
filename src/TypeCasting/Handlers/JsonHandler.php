@@ -7,6 +7,14 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
 
+use function is_array;
+use function is_string;
+use function json_decode;
+use function json_encode;
+
+use const JSON_UNESCAPED_SLASHES;
+use const JSON_UNESCAPED_UNICODE;
+
 final class JsonHandler implements OrmTypeHandlerInterface
 {
     public function supports(string $type): bool
@@ -60,7 +68,7 @@ final class JsonHandler implements OrmTypeHandlerInterface
             $policy = (string) ($options['invalid_json'] ?? 'empty');
 
             return match ($policy) {
-                'null' => null,
+                'null'  => null,
                 'throw' => throw new InvalidArgumentException('Invalid JSON string.'),
                 default => [],
             };

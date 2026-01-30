@@ -27,9 +27,11 @@ final class EntityManagerFindTest extends TestCase
         $connection = $this->createStub(ConnectionInterface::class);
 
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
+
         $em = new EntityManager($connection, $uow);
 
         $entity = new SimpleEntity(1, 'John');
+
         $repo = new SimpleEntityRepository([1 => $entity]);
 
         $em->registerRepository(SimpleEntity::class, $repo);

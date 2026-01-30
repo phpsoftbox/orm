@@ -35,13 +35,16 @@ final class AuthorRepository extends AbstractEntityRepository
     {
         /** @var Author $entity */
         return [
-            'id' => $entity->id,
+            'id'   => $entity->id,
             'name' => $entity->name,
         ];
     }
 
-    protected function doPersist(EntityInterface $entity): void {}
+    protected function doPersist(EntityInterface $entity): void
+    {
+    }
 
-    protected function doRemove(EntityInterface $entity): void {}
+    protected function doRemove(EntityInterface $entity): void
+    {
+    }
 }
-

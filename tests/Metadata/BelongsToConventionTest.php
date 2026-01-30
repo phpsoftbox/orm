@@ -22,7 +22,9 @@ final class BelongsToConventionTest extends TestCase
     public function infersJoinColumnFromRelationPropertyName(): void
     {
         $config = new EntityManagerConfig(enableBuiltInListeners: false);
+
         $provider = new AttributeMetadataProvider(namingConvention: $config->namingConvention);
+
         $meta = $provider->for(EntityWithBelongsToConvention::class);
 
         self::assertArrayHasKey('author', $meta->relations);

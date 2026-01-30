@@ -11,4 +11,3 @@ interface MetadataProviderInterface
      */
     public function for(string $entityClass): ClassMetadata;
 }
-

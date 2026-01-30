@@ -16,10 +16,8 @@ final class PostForThrough implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'int')]
         public int $author_id,
-
         #[Column(type: 'string')]
         public string $title,
     ) {

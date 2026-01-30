@@ -24,7 +24,8 @@ final class ColumnOptionsIntegrationTest extends TestCase
     public function columnOptionsAffectCasting(): void
     {
         $metadata = new AttributeMetadataProvider();
-        $caster = new DefaultTypeCasterFactory()->create();
+        $caster   = new DefaultTypeCasterFactory()->create();
+
         $mapper = new AutoEntityMapper($metadata, $caster, new TypeCastOptionsManager());
 
         $row = [

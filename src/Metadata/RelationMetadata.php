@@ -11,6 +11,8 @@ final readonly class RelationMetadata
 {
     /**
      * @param class-string $targetEntity
+     * @param array<string, class-string> $morphMap
+     * @param class-string|null $pivotEntity
      */
     public function __construct(
         public string $property,
@@ -31,12 +33,21 @@ final readonly class RelationMetadata
         public ?string $relatedPivotKey = null,
         public string $parentKey = 'id',
         public string $relatedKey = 'id',
+        public ?string $pivotEntity = null,
+        public string $pivotAccessor = 'pivot',
 
         // hasManyThrough
         public ?string $throughEntity = null,
         public ?string $firstKey = null,
         public ?string $secondKey = null,
         public string $targetKey = 'id',
+
+        // morphTo/morphMany
+        public ?string $morphTypeColumn = null,
+        public ?string $morphIdColumn = null,
+        /** @var array<string, class-string> */
+        public array $morphMap = [],
+        public ?string $morphTypeValue = null,
     ) {
     }
 }

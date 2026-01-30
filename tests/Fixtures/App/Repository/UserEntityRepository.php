@@ -26,4 +26,3 @@ final readonly class UserEntityRepository implements RepositoryInterface
     {
     }
 }
-

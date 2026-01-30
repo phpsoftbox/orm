@@ -7,7 +7,9 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 use BackedEnum;
 use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\OrmTypeHandlerInterface;
+use ValueError;
 
+use function is_int;
 use function is_string;
 
 /**
@@ -56,17 +58,20 @@ final class EnumHandler implements OrmTypeHandlerInterface
             if ($nullOnInvalid) {
                 return null;
             }
+
             throw new InvalidArgumentException('Invalid enum backing value.');
         }
 
         try {
             /** @var BackedEnum $enum */
             $enum = $enumClass::from($value);
+
             return $enum;
-        } catch (\ValueError $e) {
+        } catch (ValueError $e) {
             if ($nullOnInvalid) {
                 return null;
             }
+
             throw new InvalidArgumentException('Invalid enum backing value.', 0, $e);
         }
     }
@@ -77,4 +82,3 @@ final class EnumHandler implements OrmTypeHandlerInterface
         throw new InvalidArgumentException('Enum handler requires castFrom/castTo with options.');
     }
 }
-

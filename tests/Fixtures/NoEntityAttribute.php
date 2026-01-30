@@ -7,4 +7,3 @@ namespace PhpSoftBox\Orm\Tests\Fixtures;
 final class NoEntityAttribute
 {
 }
-

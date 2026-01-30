@@ -26,23 +26,25 @@ final class SluggableIntegrationTest extends TestCase
     public function sluggableGeneratesSlugOnCreate(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts (
                     id INTEGER PRIMARY KEY,
                     title VARCHAR(255) NOT NULL,
                     slug VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new AdvancedUnitOfWork(new WeakIdentityMap()));
 
         $post = new PostWithSlug(id: 1, title: 'Hello World', slug: '');
+
         $em->persist($post);
         $em->flush();
 
@@ -58,23 +60,25 @@ final class SluggableIntegrationTest extends TestCase
     public function sluggableSupportsPrefixPostfixAndTemplates(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $conn = new Connection($pdo, new SqliteDriver());
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE posts2 (
                     id INTEGER PRIMARY KEY,
                     title VARCHAR(255) NOT NULL,
                     slug VARCHAR(255) NOT NULL
                 )
-            "
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new AdvancedUnitOfWork(new WeakIdentityMap()));
 
         $post = new PostWithSlugPrefixPostfix(id: 7, title: 'Hello World', slug: '');
+
         $em->persist($post);
         $em->flush();
 

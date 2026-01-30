@@ -28,6 +28,7 @@ final class WeakIdentityMap implements IdentityMapInterface
         $entity = $ref->get();
         if (!$entity instanceof EntityInterface) {
             unset($this->items[$k]);
+
             return null;
         }
 
@@ -49,4 +50,3 @@ final class WeakIdentityMap implements IdentityMapInterface
         $this->items = [];
     }
 }
-

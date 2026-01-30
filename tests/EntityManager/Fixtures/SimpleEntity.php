@@ -19,4 +19,3 @@ final class SimpleEntity implements EntityInterface
         return $this->id;
     }
 }
-

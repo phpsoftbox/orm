@@ -15,7 +15,6 @@ use PhpSoftBox\Orm\Metadata\Attributes\Id;
 final class EntityWithHasManyConvention implements EntityInterface
 {
     /**
-     * @param EntityCollection<EntityInterface> $comments
      */
     public function __construct(
         #[Id]

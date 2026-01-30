@@ -17,6 +17,7 @@ final class AttributeMetadataProviderTest extends TestCase
     public function readsEntityAndColumnsMetadata(): void
     {
         $provider = new AttributeMetadataProvider();
+
         $meta = $provider->for(UserEntity::class);
 
         self::assertSame(UserEntity::class, $meta->class);
@@ -38,4 +39,3 @@ final class AttributeMetadataProviderTest extends TestCase
         self::assertSame(255, $meta->columns['name']->length);
     }
 }
-

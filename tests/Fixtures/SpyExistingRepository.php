@@ -48,4 +48,3 @@ final class SpyExistingRepository implements EntityRepositoryInterface
         return new EntityCollection([]);
     }
 }
-

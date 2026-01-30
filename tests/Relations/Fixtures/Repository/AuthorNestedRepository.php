@@ -36,7 +36,7 @@ final class AuthorNestedRepository extends AbstractEntityRepository
     {
         /** @var AuthorNested $entity */
         return [
-            'id' => $entity->id,
+            'id'   => $entity->id,
             'name' => $entity->name,
         ];
     }

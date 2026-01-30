@@ -49,7 +49,6 @@ interface EntityManagerInterface
      * Если используется AdvancedUnitOfWork, метод сперва проверяет IdentityMap (1st-level cache).
      *
      * @param class-string $entityClass
-     * @param int|string|UuidInterface $id
      */
     public function find(string $entityClass, int|string|UuidInterface $id): ?EntityInterface;
 
@@ -84,4 +83,26 @@ interface EntityManagerInterface
      * Нужен для интеграции/инструментов и тестов без использования Reflection.
      */
     public function metadataProvider(): MetadataProviderInterface;
+
+    /**
+     * Перезагружает состояние сущности из БД в текущий объект.
+     *
+     * Используйте, если:
+     * - БД меняет данные через DEFAULT/trigger/generated columns,
+     * - кто-то изменил запись вне ORM,
+     * - нужно сбросить локальные изменения.
+     *
+     * Важно: метод работает только для сущностей с заданным идентификатором (id() != null).
+     */
+    public function refresh(EntityInterface $entity): void;
+
+    /**
+     * Возвращает менеджер для управления many-to-many связью через pivot-таблицу.
+     *
+     * Пример:
+     *   $em->pivot($user, 'roles')->attach(10);
+     *
+     * @param non-empty-string $relationProperty
+     */
+    public function pivot(EntityInterface $owner, string $relationProperty): \PhpSoftBox\Orm\Relation\PivotRelationManager;
 }

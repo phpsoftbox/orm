@@ -10,4 +10,3 @@ use Attribute;
 final readonly class NotMapped
 {
 }
-

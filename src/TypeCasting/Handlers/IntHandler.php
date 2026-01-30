@@ -7,6 +7,9 @@ namespace PhpSoftBox\Orm\TypeCasting\Handlers;
 use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\TypeHandlerInterface;
 
+use function is_int;
+use function is_numeric;
+
 final class IntHandler implements TypeHandlerInterface
 {
     public function supports(string $type): bool

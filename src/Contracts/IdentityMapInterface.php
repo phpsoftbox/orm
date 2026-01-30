@@ -16,4 +16,3 @@ interface IdentityMapInterface
 
     public function clear(): void;
 }
-

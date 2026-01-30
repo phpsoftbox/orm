@@ -39,7 +39,7 @@ final class UserRepository extends AbstractEntityRepository
     {
         /** @var User $entity */
         return [
-            'id' => $entity->id->toString(),
+            'id'   => $entity->id->toString(),
             'name' => $entity->name,
         ];
     }

@@ -35,13 +35,16 @@ final class PostWithCommentsRepository extends AbstractEntityRepository
     {
         /** @var PostWithComments $entity */
         return [
-            'id' => $entity->id,
+            'id'    => $entity->id,
             'title' => $entity->title,
         ];
     }
 
-    protected function doPersist(EntityInterface $entity): void {}
+    protected function doPersist(EntityInterface $entity): void
+    {
+    }
 
-    protected function doRemove(EntityInterface $entity): void {}
+    protected function doRemove(EntityInterface $entity): void
+    {
+    }
 }
-

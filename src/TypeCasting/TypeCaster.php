@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\TypeCasting;
 
+use InvalidArgumentException;
 use PhpSoftBox\Orm\TypeCasting\Contracts\TypeCasterInterface;
 use PhpSoftBox\Orm\TypeCasting\Contracts\TypeHandlerInterface;
 
@@ -45,6 +46,7 @@ class TypeCaster implements TypeCasterInterface
         // Если передали class-string handler'а — применяем его напрямую.
         if (is_a($type, TypeHandlerInterface::class, true)) {
             $handler = new $type();
+
             return $handler->cast($value);
         }
 
@@ -54,7 +56,7 @@ class TypeCaster implements TypeCasterInterface
             }
         }
 
-        throw new \InvalidArgumentException('No type handler registered for type: ' . $type);
+        throw new InvalidArgumentException('No type handler registered for type: ' . $type);
     }
 
     public function castArray(array $config, array $data): array

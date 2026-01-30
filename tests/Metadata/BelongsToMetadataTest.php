@@ -23,6 +23,7 @@ final class BelongsToMetadataTest extends TestCase
     public function belongsToCreatesManyToOneRelation(): void
     {
         $provider = new AttributeMetadataProvider();
+
         $meta = $provider->for(EntityWithBelongsTo::class);
 
         self::assertArrayHasKey('author', $meta->relations);
@@ -38,6 +39,7 @@ final class BelongsToMetadataTest extends TestCase
     public function belongsToDefaultsReferencedColumnToId(): void
     {
         $provider = new AttributeMetadataProvider();
+
         $meta = $provider->for(EntityWithBelongsToDefaults::class);
 
         self::assertArrayHasKey('author', $meta->relations);
@@ -53,6 +55,7 @@ final class BelongsToMetadataTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $provider = new AttributeMetadataProvider();
+
         $provider->for(EntityWithBelongsToAndManyToOneConflict::class);
     }
 }

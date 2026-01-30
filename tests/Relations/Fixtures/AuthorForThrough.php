@@ -16,7 +16,6 @@ final class AuthorForThrough implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'int')]
         public int $company_id,
     ) {

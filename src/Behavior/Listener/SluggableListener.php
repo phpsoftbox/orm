@@ -46,15 +46,15 @@ final readonly class SluggableListener
                 continue;
             }
 
-            $data = $event->state()->getData();
+            $data        = $event->state()->getData();
             $sourceValue = $data[$sluggable->source] ?? null;
             if (!is_string($sourceValue)) {
                 continue;
             }
 
             $slugCore = $this->slugifier->slugify($sourceValue);
-            $prefix = $this->renderTemplate($sluggable->prefix, $data);
-            $postfix = $this->renderTemplate($sluggable->postfix, $data);
+            $prefix   = $this->renderTemplate($sluggable->prefix, $data);
+            $postfix  = $this->renderTemplate($sluggable->postfix, $data);
 
             $event->state()->register($sluggable->target, $prefix . $slugCore . $postfix);
         }
@@ -76,7 +76,7 @@ final readonly class SluggableListener
         return (string) preg_replace_callback(
             '/\{([a-zA-Z0-9_]+)\}/',
             static function (array $m) use ($data): string {
-                $key = $m[1];
+                $key   = $m[1];
                 $value = $data[$key] ?? '';
 
                 if (is_object($value) && method_exists($value, 'toString')) {

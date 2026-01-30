@@ -10,4 +10,3 @@ use PhpSoftBox\Orm\Metadata\Attributes\Entity;
 final class UserEntity
 {
 }
-

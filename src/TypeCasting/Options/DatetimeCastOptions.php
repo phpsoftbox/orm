@@ -24,8 +24,8 @@ final readonly class DatetimeCastOptions implements TypeCastingOptionsInterface
     public function toArray(): array
     {
         return [
-            'format_to' => $this->formatTo,
-            'format_from' => $this->formatFrom,
+            'format_to'     => $this->formatTo,
+            'format_from'   => $this->formatFrom,
             'dateTimeClass' => $this->dateTimeClass,
         ];
     }

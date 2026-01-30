@@ -42,4 +42,3 @@ final class StubUserMappedRepository implements EntityRepositoryInterface
         return new EntityCollection([$this->entity]);
     }
 }
-

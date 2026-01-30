@@ -17,7 +17,6 @@ final class EntityWithHasOneConvention implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[HasOne(targetEntity: UserEntity::class)]
         public ?UserEntity $profile = null,
     ) {

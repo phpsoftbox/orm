@@ -36,8 +36,8 @@ final class SoftDeleteUserRepository extends AbstractEntityRepository
     {
         /** @var SoftDeleteUser $entity */
         return [
-            'id' => $entity->id,
-            'name' => $entity->name,
+            'id'               => $entity->id,
+            'name'             => $entity->name,
             'deleted_datetime' => $entity->deletedDatetime,
         ];
     }

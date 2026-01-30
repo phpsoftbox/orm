@@ -18,10 +18,8 @@ final class PostWithSlugPrefixPostfix implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $title,
-
         #[Column(type: 'string')]
         public string $slug,
     ) {
@@ -32,4 +30,3 @@ final class PostWithSlugPrefixPostfix implements EntityInterface
         return $this->id;
     }
 }
-

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests\Repository;
 
+use PDO;
 use PhpSoftBox\Database\Connection\Connection;
 use PhpSoftBox\Database\Driver\SqliteDriver;
 use PhpSoftBox\Orm\EntityManager;
@@ -15,7 +16,6 @@ use PhpSoftBox\Orm\Tests\Repository\Fixtures\SoftDeleteEntity;
 use PhpSoftBox\Orm\TypeCasting\DefaultTypeCasterFactory;
 use PhpSoftBox\Orm\TypeCasting\Options\TypeCastOptionsManager;
 use PhpSoftBox\Orm\UnitOfWork\InMemoryUnitOfWork;
-use PDO;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -33,19 +33,21 @@ final class SoftDeleteIntegrationTest extends TestCase
     public function softDeleteWorks(): void
     {
         $pdo = new PDO('sqlite::memory:');
+
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $driver = new SqliteDriver();
+
         $conn = new Connection($pdo, $driver);
 
         $conn->execute(
-            "
+            '
                 CREATE TABLE soft_delete_entities (
                     id INTEGER PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     deleted_datetime VARCHAR(64) NULL
                 )
-            "
+            ',
         );
 
         $conn->execute(
@@ -54,7 +56,7 @@ final class SoftDeleteIntegrationTest extends TestCase
                 VALUES
                     (1, 'Alive', NULL),
                     (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            "
+            ",
         );
 
         $repo = new GenericEntityRepository($conn, SoftDeleteEntity::class);
@@ -90,6 +92,7 @@ final class SoftDeleteIntegrationTest extends TestCase
 
         // delete() должен сделать UPDATE deleted_datetime
         $metadata = new AttributeMetadataProvider();
+
         $mapper = new AutoEntityMapper(
             metadata: $metadata,
             typeCaster: new DefaultTypeCasterFactory()->create(),

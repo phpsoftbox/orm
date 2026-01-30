@@ -12,6 +12,7 @@ final readonly class BelongsToMany
     /**
      * @param class-string $targetEntity
      * @param class-string|null $pivotOwner
+     * @param class-string|null $pivotEntity
      */
     public function __construct(
         public string $targetEntity,
@@ -19,6 +20,8 @@ final readonly class BelongsToMany
         public ?string $foreignPivotKey = null,
         public ?string $relatedPivotKey = null,
         public ?string $pivotOwner = null,
+        public ?string $pivotEntity = null,
+        public string $pivotAccessor = 'pivot',
         public string $parentKey = 'id',
         public string $relatedKey = 'id',
     ) {

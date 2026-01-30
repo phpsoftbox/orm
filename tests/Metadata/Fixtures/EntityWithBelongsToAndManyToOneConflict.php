@@ -18,10 +18,8 @@ final class EntityWithBelongsToAndManyToOneConflict implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(name: 'author_id', type: 'int')]
         public int $authorId,
-
         #[BelongsTo(targetEntity: UserEntity::class, joinColumn: 'authorId')]
         #[ManyToOne(targetEntity: UserEntity::class, joinColumn: 'authorId')]
         public ?UserEntity $author = null,

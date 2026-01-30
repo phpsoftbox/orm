@@ -21,7 +21,6 @@ final class UserWithRoles implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $name,
 

@@ -21,10 +21,8 @@ final class PostWithNestedComments implements EntityInterface
         #[Id]
         #[Column(type: 'int')]
         public int $id,
-
         #[Column(type: 'string')]
         public string $title,
-
         #[HasMany(targetEntity: CommentWithAuthor::class, foreignKey: 'post_id', localKey: 'id')]
         public ?EntityCollection $comments = null,
     ) {

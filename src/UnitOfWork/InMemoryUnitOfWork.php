@@ -7,6 +7,8 @@ namespace PhpSoftBox\Orm\UnitOfWork;
 use PhpSoftBox\Orm\Contracts\EntityInterface;
 use PhpSoftBox\Orm\Contracts\UnitOfWorkInterface;
 
+use function array_values;
+use function ksort;
 use function spl_object_id;
 
 /**
@@ -94,6 +96,7 @@ final class InMemoryUnitOfWork implements UnitOfWorkInterface
         if ($state === EntityState::New) {
             $this->scheduledInserts[$oid] = $entity;
             unset($this->scheduledUpdates[$oid]);
+
             return;
         }
 
@@ -113,6 +116,7 @@ final class InMemoryUnitOfWork implements UnitOfWorkInterface
         // Если сущность была запланирована на INSERT, то remove до flush = no-op.
         if (isset($this->scheduledInserts[$oid])) {
             unset($this->scheduledInserts[$oid], $this->scheduledUpdates[$oid], $this->scheduledDeletes[$oid]);
+
             return;
         }
 
@@ -122,6 +126,7 @@ final class InMemoryUnitOfWork implements UnitOfWorkInterface
         // то это no-op: снимаем insert/update и не добавляем delete.
         if ($state === EntityState::New) {
             unset($this->scheduledInserts[$oid], $this->scheduledUpdates[$oid]);
+
             return;
         }
 
@@ -136,6 +141,7 @@ final class InMemoryUnitOfWork implements UnitOfWorkInterface
         // NEW + forceRemove до flush = no-op
         if (isset($this->scheduledInserts[$oid])) {
             unset($this->scheduledInserts[$oid], $this->scheduledUpdates[$oid], $this->scheduledDeletes[$oid], $this->scheduledForceDeletes[$oid]);
+
             return;
         }
 
@@ -165,15 +171,15 @@ final class InMemoryUnitOfWork implements UnitOfWorkInterface
 
     public function clearScheduledOperations(): void
     {
-        $this->scheduledInserts = [];
-        $this->scheduledUpdates = [];
-        $this->scheduledDeletes = [];
+        $this->scheduledInserts      = [];
+        $this->scheduledUpdates      = [];
+        $this->scheduledDeletes      = [];
         $this->scheduledForceDeletes = [];
     }
 
     public function clear(): void
     {
-        $this->states = [];
+        $this->states    = [];
         $this->snapshots = [];
         $this->clearScheduledOperations();
     }
@@ -186,6 +192,7 @@ final class InMemoryUnitOfWork implements UnitOfWorkInterface
     {
         // Минимальная нормализация: стабильный порядок ключей.
         ksort($data);
+
         return $data;
     }
 }

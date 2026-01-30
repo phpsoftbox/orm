@@ -8,7 +8,6 @@ use PhpSoftBox\Database\Contracts\ConnectionInterface;
 use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
 use PhpSoftBox\Orm\Persistence\DefaultEntityPersister;
 use PhpSoftBox\Orm\Repository\AutoEntityMapper;
-use PhpSoftBox\Orm\Tests\TypeCasting\Fixtures\AllTypesEntity;
 use PhpSoftBox\Orm\Tests\Persistence\Fixtures\AllTypesPersistEntity;
 use PhpSoftBox\Orm\TypeCasting\DefaultTypeCasterFactory;
 use PhpSoftBox\Orm\TypeCasting\Options\TypeCastOptionsManager;
@@ -31,9 +30,10 @@ final class DefaultEntityPersisterTest extends TestCase
         $connection = $this->createStub(ConnectionInterface::class);
 
         $metadata = new AttributeMetadataProvider();
+
         $mapper = new AutoEntityMapper(
             metadata: $metadata,
-            typeCaster: (new DefaultTypeCasterFactory())->create(),
+            typeCaster: new DefaultTypeCasterFactory()->create(),
             optionsManager: new TypeCastOptionsManager(),
         );
 

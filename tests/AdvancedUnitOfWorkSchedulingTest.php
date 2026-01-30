@@ -6,8 +6,8 @@ namespace PhpSoftBox\Orm\Tests;
 
 use PhpSoftBox\Orm\IdentityMap\WeakIdentityMap;
 use PhpSoftBox\Orm\Tests\Fixtures\EntityWithNullableIntId;
-use PhpSoftBox\Orm\UnitOfWork\EntityState;
 use PhpSoftBox\Orm\UnitOfWork\AdvancedUnitOfWork;
+use PhpSoftBox\Orm\UnitOfWork\EntityState;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -24,6 +24,7 @@ final class AdvancedUnitOfWorkSchedulingTest extends TestCase
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
 
         $e = new EntityWithNullableIntId(null);
+
         $uow->markNew($e);
         $uow->schedulePersist($e);
 
@@ -41,6 +42,7 @@ final class AdvancedUnitOfWorkSchedulingTest extends TestCase
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
 
         $e = new EntityWithNullableIntId(null);
+
         $uow->markNew($e);
         $uow->schedulePersist($e);
 
@@ -63,6 +65,7 @@ final class AdvancedUnitOfWorkSchedulingTest extends TestCase
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
         $uow->schedulePersist($e);
 
@@ -87,6 +90,7 @@ final class AdvancedUnitOfWorkSchedulingTest extends TestCase
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
 
         $uow->markRemoved($e);
@@ -110,6 +114,7 @@ final class AdvancedUnitOfWorkSchedulingTest extends TestCase
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
 
         $uow->schedulePersist($e);
@@ -127,6 +132,7 @@ final class AdvancedUnitOfWorkSchedulingTest extends TestCase
         $uow = new AdvancedUnitOfWork(new WeakIdentityMap());
 
         $e = new EntityWithNullableIntId(10);
+
         $uow->markManaged($e);
 
         $uow->markRemoved($e);
