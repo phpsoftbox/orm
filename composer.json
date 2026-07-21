@@ -1,0 +1,53 @@
+{
+    "name": "phpsoftbox/orm",
+    "description": "ORM component for the PhpSoftBox framework",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Anton K.",
+            "email": "inspector-who@mail.ru"
+        }
+    ],
+    "require": {
+        "php": "^8.5",
+        "phpsoftbox/clock": "dev-master",
+        "phpsoftbox/collection": "dev-master",
+        "phpsoftbox/data-casting": "dev-master",
+        "phpsoftbox/database": "dev-master",
+        "phpsoftbox/database-lookup": "dev-master",
+        "phpsoftbox/encryptor": "dev-master",
+        "phpsoftbox/inflector": "dev-master",
+        "ramsey/uuid": "^4.7"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.2",
+        "friendsofphp/php-cs-fixer": "^3.93",
+        "phpsoftbox/cli-app": "dev-master",
+        "phpsoftbox/cs-fixer": "^1.1.0",
+        "phpsoftbox/storage": "dev-master",
+        "phpsoftbox/validator": "dev-master"
+    },
+    "suggest": {
+        "ext-mongodb": "Required for Mongo changelog driver.",
+        "mongodb/mongodb": "Required for Mongo changelog driver.",
+        "phpsoftbox/mongo": "Provides MongoConnectionManagerInterface for Mongo changelog driver."
+    },
+    "autoload": {
+        "psr-4": {
+            "PhpSoftBox\\Orm\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PhpSoftBox\\Orm\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "cs:fix": "vendor/bin/psb-cs-fixer fix",
+        "cs:check": "vendor/bin/psb-cs-fixer check --diff"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
