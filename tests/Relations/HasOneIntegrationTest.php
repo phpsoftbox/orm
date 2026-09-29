@@ -51,15 +51,17 @@ final class HasOneIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_profile (id, name) VALUES (1, 'Anton'), (2, 'Without profile')
-            ",
+            '
+                INSERT INTO users_profile (id, name)
+                VALUES (1, \'Anton\'), (2, \'Without profile\')
+            ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO profiles (id, user_id, bio) VALUES (10, 1, 'dev')
-            ",
+            '
+                INSERT INTO profiles (id, user_id, bio)
+                VALUES (10, 1, \'dev\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

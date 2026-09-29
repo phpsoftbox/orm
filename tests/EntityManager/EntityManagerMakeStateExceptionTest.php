@@ -24,7 +24,7 @@ final class EntityManagerMakeStateExceptionTest extends TestCase
     #[Test]
     public function flushThrowsWhenMakeStateExtractionFails(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);

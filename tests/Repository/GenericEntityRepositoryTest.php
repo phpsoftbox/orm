@@ -43,10 +43,10 @@ final class GenericEntityRepositoryTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO test_entities (id, name)
-                VALUES (1, 'John'), (2, 'Kate')
-            ",
+                VALUES (1, \'John\'), (2, \'Kate\')
+            ',
         );
 
         $repo = new GenericEntityRepository($conn, TestEntity::class);
@@ -85,10 +85,10 @@ final class GenericEntityRepositoryTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO test_entities (id, name)
-                VALUES (1, 'John'), (2, 'Kate'), (3, 'Sam')
-            ",
+                VALUES (1, \'John\'), (2, \'Kate\'), (3, \'Sam\')
+            ',
         );
 
         $repo = new GenericEntityRepository($conn, TestEntity::class);
@@ -127,10 +127,14 @@ final class GenericEntityRepositoryTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO test_entities (id, name)
-                VALUES (1, 'John'), (2, 'Kate'), (3, 'Sam'), (4, 'Kate')
-            ",
+                VALUES
+                    (1, \'John\'),
+                    (2, \'Kate\'),
+                    (3, \'Sam\'),
+                    (4, \'Kate\')
+            ',
         );
 
         $repo = new GenericEntityRepository($conn, TestEntity::class);

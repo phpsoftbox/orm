@@ -63,15 +63,17 @@ final class PivotRelationWriterIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_pivot_rel (id, name) VALUES (1, 'Anton')
-            ",
+            '
+                INSERT INTO users_pivot_rel (id, name)
+                VALUES (1, \'Anton\')
+            ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (10, 'admin')
-            ",
+            '
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (10, \'admin\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -90,7 +92,10 @@ final class PivotRelationWriterIntegrationTest extends TestCase
 
         $row = $conn->fetchOne(
             '
-                SELECT user_id, role_id FROM user_role_pivot_rel WHERE user_id = 1 AND role_id = 10
+                SELECT user_id, role_id
+                FROM user_role_pivot_rel
+                WHERE user_id = 1
+                    AND role_id = 10
             ',
         );
 
@@ -137,20 +142,23 @@ final class PivotRelationWriterIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_pivot_rel (id, name) VALUES (1, 'Anton')
-            ",
-        );
-
-        $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (10, 'admin')
-            ",
+            '
+                INSERT INTO users_pivot_rel (id, name)
+                VALUES (1, \'Anton\')
+            ',
         );
 
         $conn->execute(
             '
-                INSERT INTO user_role_pivot_rel (user_id, role_id) VALUES (1, 10)
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (10, \'admin\')
+            ',
+        );
+
+        $conn->execute(
+            '
+                INSERT INTO user_role_pivot_rel (user_id, role_id)
+                VALUES (1, 10)
             ',
         );
 
@@ -170,7 +178,10 @@ final class PivotRelationWriterIntegrationTest extends TestCase
 
         $row = $conn->fetchOne(
             '
-                SELECT user_id, role_id FROM user_role_pivot_rel WHERE user_id = 1 AND role_id = 10
+                SELECT user_id, role_id
+                FROM user_role_pivot_rel
+                WHERE user_id = 1
+                    AND role_id = 10
             ',
         );
 
@@ -217,39 +228,45 @@ final class PivotRelationWriterIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_pivot_rel (id, name) VALUES (1, 'Anton')
-            ",
-        );
-
-        $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (10, 'admin')
-            ",
-        );
-
-        $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (11, 'editor')
-            ",
-        );
-
-        $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (12, 'viewer')
-            ",
-        );
-
-        // Изначально: (1,10) и (1,11)
-        $conn->execute(
             '
-                INSERT INTO user_role_pivot_rel (user_id, role_id) VALUES (1, 10)
+                INSERT INTO users_pivot_rel (id, name)
+                VALUES (1, \'Anton\')
             ',
         );
 
         $conn->execute(
             '
-                INSERT INTO user_role_pivot_rel (user_id, role_id) VALUES (1, 11)
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (10, \'admin\')
+            ',
+        );
+
+        $conn->execute(
+            '
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (11, \'editor\')
+            ',
+        );
+
+        $conn->execute(
+            '
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (12, \'viewer\')
+            ',
+        );
+
+        // Изначально: (1,10) и (1,11)
+        $conn->execute(
+            '
+                INSERT INTO user_role_pivot_rel (user_id, role_id)
+                VALUES (1, 10)
+            ',
+        );
+
+        $conn->execute(
+            '
+                INSERT INTO user_role_pivot_rel (user_id, role_id)
+                VALUES (1, 11)
             ',
         );
 
@@ -270,7 +287,10 @@ final class PivotRelationWriterIntegrationTest extends TestCase
 
         $rows = $conn->fetchAll(
             '
-                SELECT role_id FROM user_role_pivot_rel WHERE user_id = 1 ORDER BY role_id
+                SELECT role_id
+                FROM user_role_pivot_rel
+                WHERE user_id = 1
+                ORDER BY role_id
             ',
         );
 
@@ -320,21 +340,24 @@ final class PivotRelationWriterIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_pivot_rel (id, name) VALUES (1, 'Anton')
-            ",
+            '
+                INSERT INTO users_pivot_rel (id, name)
+                VALUES (1, \'Anton\')
+            ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (10, 'admin')
-            ",
+            '
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (10, \'admin\')
+            ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (11, 'editor')
-            ",
+            '
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (11, \'editor\')
+            ',
         );
 
         // Уже есть связь (1,10), но created_datetime = NULL
@@ -365,7 +388,10 @@ final class PivotRelationWriterIntegrationTest extends TestCase
 
         $row10 = $conn->fetchOne(
             '
-                SELECT created_datetime FROM user_role_pivot_rel WHERE user_id = 1 AND role_id = 10
+                SELECT created_datetime
+                FROM user_role_pivot_rel
+                WHERE user_id = 1
+                    AND role_id = 10
             ',
         );
         self::assertNotNull($row10);
@@ -373,7 +399,10 @@ final class PivotRelationWriterIntegrationTest extends TestCase
 
         $row11 = $conn->fetchOne(
             '
-                SELECT created_datetime FROM user_role_pivot_rel WHERE user_id = 1 AND role_id = 11
+                SELECT created_datetime
+                FROM user_role_pivot_rel
+                WHERE user_id = 1
+                    AND role_id = 11
             ',
         );
         self::assertNotNull($row11);
@@ -387,7 +416,10 @@ final class PivotRelationWriterIntegrationTest extends TestCase
 
         $row10b = $conn->fetchOne(
             '
-                SELECT created_datetime FROM user_role_pivot_rel WHERE user_id = 1 AND role_id = 10
+                SELECT created_datetime
+                FROM user_role_pivot_rel
+                WHERE user_id = 1
+                    AND role_id = 10
             ',
         );
         self::assertNotNull($row10b);

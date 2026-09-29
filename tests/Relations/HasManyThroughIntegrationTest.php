@@ -62,29 +62,34 @@ final class HasManyThroughIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO companies_hmt (id, name) VALUES (1, 'Mindgarden')
-            ",
-        );
-        $conn->execute(
             '
-                INSERT INTO authors_hmt (id, company_id) VALUES (10, 1)
+                INSERT INTO companies_hmt (id, name)
+                VALUES (1, \'Mindgarden\')
             ',
         );
         $conn->execute(
             '
-                INSERT INTO authors_hmt (id, company_id) VALUES (11, 1)
+                INSERT INTO authors_hmt (id, company_id)
+                VALUES (10, 1)
             ',
         );
         $conn->execute(
-            "
-                INSERT INTO posts_hmt (id, author_id, title) VALUES (100, 10, 'a')
-            ",
+            '
+                INSERT INTO authors_hmt (id, company_id)
+                VALUES (11, 1)
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO posts_hmt (id, author_id, title) VALUES (101, 11, 'b')
-            ",
+            '
+                INSERT INTO posts_hmt (id, author_id, title)
+                VALUES (100, 10, \'a\')
+            ',
+        );
+        $conn->execute(
+            '
+                INSERT INTO posts_hmt (id, author_id, title)
+                VALUES (101, 11, \'b\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

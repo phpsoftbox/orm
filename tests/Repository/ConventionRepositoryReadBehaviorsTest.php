@@ -43,12 +43,12 @@ final class ConventionRepositoryReadBehaviorsTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO sd_users (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

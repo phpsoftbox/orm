@@ -19,7 +19,7 @@ final class ConnectionEntityManagerFactoryTest extends TestCase
     #[Test]
     public function createUsesWriteConnectionByDefault(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -39,7 +39,7 @@ final class ConnectionEntityManagerFactoryTest extends TestCase
     #[Test]
     public function createUsesReadConnectionWhenWriteFlagIsFalse(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -59,7 +59,7 @@ final class ConnectionEntityManagerFactoryTest extends TestCase
     #[Test]
     public function passesGlobalChangelogIgnoredFieldsToEntityManager(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -85,7 +85,7 @@ final class ConnectionEntityManagerFactoryTest extends TestCase
     #[Test]
     public function createdManagersShareFactoryRuntimeState(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections->expects(self::exactly(2))->method('write')->willReturn($connection);
 

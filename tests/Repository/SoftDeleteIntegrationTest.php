@@ -54,10 +54,10 @@ final class SoftDeleteIntegrationTest extends TestCase
             ',
         );
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
-                VALUES (2, 'Deleted', '2026-01-01 00:00:00')
-            ",
+                VALUES (2, \'Deleted\', \'2026-01-01 00:00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -108,12 +108,12 @@ final class SoftDeleteIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $repo = new GenericEntityRepository($conn, SoftDeleteEntity::class);
@@ -211,10 +211,10 @@ final class SoftDeleteIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
-                VALUES (2, 'Deleted', '2026-01-01 00:00:00')
-            ",
+                VALUES (2, \'Deleted\', \'2026-01-01 00:00:00\')
+            ',
         );
 
         $listener = new class () {
@@ -322,10 +322,10 @@ final class SoftDeleteIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
-                VALUES (2, 'Deleted', '2026-01-01 00:00:00')
-            ",
+                VALUES (2, \'Deleted\', \'2026-01-01 00:00:00\')
+            ',
         );
 
         $logger = new class () implements EntityChangeLoggerInterface {
