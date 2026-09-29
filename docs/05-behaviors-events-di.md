@@ -20,10 +20,63 @@ EntityManager вызывает события во время `flush()`:
 | Событие | Что уходит в запрос |
 |---|---|
 | `OnCreate` | всё состояние — INSERT |
-| `OnUpdate` | всё состояние — UPDATE |
+| `OnUpdate` | колонки, изменённые относительно snapshot, и колонки, которые добавил/изменил слушатель — UPDATE |
 | `OnRestore` | всё состояние — UPDATE |
 | `OnDelete` | при `#[SoftDelete]` — колонки, которые изменил слушатель, в том же UPDATE; при физическом удалении игнорируется |
 | `OnForceDelete` | ничего: запись удаляется физически |
+
+## Обработчики событий и порядок вызова
+
+Событие сущности получают (в этом порядке):
+
+1. `#[Hook]` сущности — статический callable, объявленный атрибутом на классе сущности;
+2. `#[EventListener]` сущности — только для событий **этой** сущности (listener другой сущности их не получает);
+3. глобальный dispatcher (`events` в `EntityManager`) — listeners, зарегистрированные для всех сущностей;
+4. встроенные listeners ORM (Sluggable, Timestamps), если включены.
+
+```php
+#[Entity(table: 'posts')]
+#[Hook(callable: [self::class, 'beforeCreate'], events: [OnCreate::class])]
+#[EventListener(listener: PostListener::class)]
+final class Post implements EntityInterface
+{
+    public static function beforeCreate(OnCreate $event): void
+    {
+        // ...
+    }
+}
+```
+
+Исключение из hook или listener, а также ошибка создания listener пробрасываются из `flush()`
+и откатывают его транзакцию. Hook, который не является callable, — ошибка конфигурации (`OrmException`).
+
+### Какие методы listener'а вызываются
+
+- метод с `#[Listen(Event::class)]` вызывается для перечисленных в атрибутах событий;
+- публичный метод `on*(Event $event)` **без** `#[Listen]` вызывается по соглашению имени, если тип параметра
+  совпадает с классом события;
+- метод с `#[Listen]` по соглашению имени повторно не вызывается: каждый метод срабатывает на событие один раз.
+
+### Создание `#[EventListener]` (DI)
+
+Listener сущности создаётся один раз на `EntityManager` через `ListenerResolverInterface`:
+
+- `DefaultListenerResolver` (по умолчанию) — `new $class()`; для listener с обязательными аргументами
+  конструктора бросает `OrmException`;
+- `ContainerListenerResolver` — берёт listener из PSR-11 контейнера (`$container->get($class)`), поэтому listener
+  может иметь зависимости. Если контейнер не знает класс, используется `DefaultListenerResolver`.
+
+```php
+use PhpSoftBox\Orm\Behavior\ContainerListenerResolver;
+
+$em = new EntityManager(
+    connection: $conn,
+    listenerResolver: new ContainerListenerResolver($container),
+);
+```
+
+Для registry/фабрики тот же резолвер передаётся параметром `listenerResolver`
+(см. [EntityManagerRegistry](08-entity-manager-registry.md)).
 
 ## Behaviors
 
@@ -175,7 +228,9 @@ $em = new EntityManager(
 
 ## Конфигурация EntityManager и built-in behaviors
 
-По умолчанию `EntityManager` регистрирует встроенные behaviors (например Sluggable) через `DefaultEventDispatcher`.
+По умолчанию `EntityManager` подключает встроенные behaviors (например Sluggable). Они хранятся внутри
+`EntityManager` и вызываются после глобального dispatcher; в переданный `events` они не регистрируются,
+поэтому один dispatcher можно разделять между несколькими `EntityManager` (например, в registry).
 
 ### Что такое built-in behaviors/listeners
 

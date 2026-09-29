@@ -42,10 +42,10 @@ final class EntityManagerForceRemoveIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
-                VALUES (1, 'Alive', NULL)
-            ",
+                VALUES (1, \'Alive\', NULL)
+            ',
         );
 
         $em = new EntityManager(

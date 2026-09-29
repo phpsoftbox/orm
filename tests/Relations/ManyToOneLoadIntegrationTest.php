@@ -49,13 +49,15 @@ final class ManyToOneLoadIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO authors (id, name) VALUES (10, 'Anton')
-            ",
+            '
+                INSERT INTO authors (id, name)
+                VALUES (10, \'Anton\')
+            ',
         );
         $conn->execute(
             '
-                INSERT INTO posts_rel (id, author_id) VALUES (1, 10)
+                INSERT INTO posts_rel (id, author_id)
+                VALUES (1, 10)
             ',
         );
 

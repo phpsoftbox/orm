@@ -8,21 +8,11 @@ use PhpSoftBox\Orm\Contracts\EntityInterface;
 use PhpSoftBox\Orm\Metadata\Attributes\Column;
 use PhpSoftBox\Orm\Metadata\Attributes\Entity;
 use PhpSoftBox\Orm\Metadata\Attributes\Id;
-use PhpSoftBox\Orm\Relation\HasPivotInterface;
-use PhpSoftBox\Orm\Relation\HasPivotTrait;
 use Ramsey\Uuid\UuidInterface;
 
-/**
- * @implements HasPivotInterface<UserRole>
- */
 #[Entity(table: 'roles_pivot_rel')]
-final class Role implements EntityInterface, HasPivotInterface
+final class Role implements EntityInterface
 {
-    /**
-     * @use HasPivotTrait<UserRole>
-     */
-    use HasPivotTrait;
-
     #[Id]
     #[Column(type: 'int')]
     public int $id;

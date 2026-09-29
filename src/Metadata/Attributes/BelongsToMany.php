@@ -21,7 +21,6 @@ final readonly class BelongsToMany
         public ?string $relatedPivotKey = null,
         public ?string $pivotOwner = null,
         public ?string $pivotEntity = null,
-        public string $pivotAccessor = 'pivot',
         public string $parentKey = 'id',
         public string $relatedKey = 'id',
     ) {

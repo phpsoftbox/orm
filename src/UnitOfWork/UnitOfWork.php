@@ -11,6 +11,7 @@ use PhpSoftBox\Orm\Contracts\UnitOfWorkInterface;
 use PhpSoftBox\Orm\Identity\EntityKey;
 use Ramsey\Uuid\UuidInterface;
 
+use function array_key_exists;
 use function array_values;
 use function is_array;
 use function is_object;
@@ -109,6 +110,28 @@ final class UnitOfWork implements UnitOfWorkInterface
         }
 
         return $snapshot->data !== $this->normalizeSnapshotData($currentData);
+    }
+
+    public function changedFields(EntityInterface $entity, array $currentData): ?array
+    {
+        $snapshot = $this->snapshot($entity);
+        if ($snapshot === null) {
+            return null;
+        }
+
+        $changed = [];
+        foreach ($currentData as $column => $value) {
+            if (
+                array_key_exists($column, $snapshot->data)
+                && $snapshot->data[$column] === $this->normalizeValue($value)
+            ) {
+                continue;
+            }
+
+            $changed[$column] = $value;
+        }
+
+        return $changed;
     }
 
     public function isRelationLoaded(EntityInterface $entity, string $relation): bool

@@ -6,7 +6,7 @@
 
 - загрузить связанные сущности (например `Role`),
 - загрузить строки pivot-таблицы,
-- гидрировать pivot-сущность (например `UserRole`) и прикрепить к target entity через accessor.
+- гидрировать pivot-сущность (например `UserRole`) и сохранить её в коллекции связи owner'а.
 
 ## Термины
 
@@ -79,7 +79,6 @@ final class User implements EntityInterface
         foreignPivotKey: 'user_id',
         relatedPivotKey: 'role_id',
         pivotEntity: UserRole::class,
-        pivotAccessor: 'pivot',
     )]
     public EntityCollection $roles;
 
@@ -90,42 +89,34 @@ final class User implements EntityInterface
 }
 ```
 
-### Pivot accessor и IDE autocomplete
-
-Чтобы сохранить автодополнение IDE, pivot лучше предоставлять **не через магические свойства**, а через метод.
-
-Рекомендуемый вариант: `HasPivotInterface` + `HasPivotTrait`.
-
-Пример использования в target entity:
-
-```php
-use PhpSoftBox\Orm\Relation\HasPivotInterface;
-use PhpSoftBox\Orm\Relation\HasPivotTrait;
-
-/**
- * @implements HasPivotInterface<UserRole>
- */
-#[Entity(table: 'roles')]
-final class Role implements EntityInterface, HasPivotInterface
-{
-    /**
-     * @use HasPivotTrait<UserRole>
-     */
-    use HasPivotTrait;
-
-    // ...остальные поля...
-}
-```
-
 ## Как загружать pivot данные
+
+Pivot относится к паре owner + related, поэтому хранится не в related-сущности, а в коллекции связи owner'а:
+`EntityCollection::pivot($related)`.
 
 ```php
 $em->load($user, 'roles');
 
 foreach ($user->roles as $role) {
-    $created = $role->pivot()?->createdDatetime;
+    /** @var UserRole|null $pivot */
+    $pivot   = $user->roles->pivot($role);
+    $created = $pivot?->createdDatetime;
 }
 ```
+
+Одна и та же managed-сущность `Role` может входить в связи разных пользователей (IdentityMap), и у каждого
+пользователя будет свой pivot:
+
+```php
+$em->load([$anton, $maria], 'roles');
+
+$anton->roles->pivot($adminRole); // строка user_roles для Anton
+$maria->roles->pivot($adminRole); // строка user_roles для Maria
+```
+
+`pivot()` возвращает `null`, если элемента нет в этой коллекции или у связи не задан `pivotEntity`.
+Pivot доступен только у коллекции, которую записала ORM (`load()`/`with()`); производные коллекции
+(`filter()`, `map()` и т.п.) pivot не переносят.
 
 ## Pivot helpers (attach/detach/sync)
 
@@ -137,17 +128,3 @@ foreach ($user->roles as $role) {
 - `$em->pivot($user, 'roles')->syncWithPivotData($map, updatePivot: bool)`
 
 Подробное описание `syncWithPivotData` (pivotData + updatePivot) находится в главе `Relations`.
-
-## Ограничение: IdentityMap и «pivot на сущности»
-
-Если одна и та же сущность `Role` шарится между разными owner в рамках одного UnitOfWork (IdentityMap),
-то pivot-на-сущности может перетираться.
-
-На текущем этапе это ограничение принимаем как MVP:
-
-- pivot корректен при использовании relation-коллекции в контексте одного owner (типичный сценарий)
-
-В будущем можно улучшить:
-
-- хранить pivot не в entity, а в relation-context коллекции
-- или возвращать wrapper-объекты (`RoleWithPivot`)

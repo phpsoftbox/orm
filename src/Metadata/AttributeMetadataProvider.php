@@ -362,7 +362,6 @@ final class AttributeMetadataProvider implements MetadataProviderInterface
                     parentKey: $btm->parentKey,
                     relatedKey: $btm->relatedKey,
                     pivotEntity: $btm->pivotEntity,
-                    pivotAccessor: $btm->pivotAccessor,
                     relationScopes: $relationScopes,
                     pivotScopes: $pivotScopes,
                 );

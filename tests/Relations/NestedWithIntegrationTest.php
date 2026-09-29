@@ -57,18 +57,21 @@ final class NestedWithIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO companies (id, name) VALUES (1, 'Mindgarden')
-            ",
-        );
-        $conn->execute(
-            "
-                INSERT INTO authors2 (id, name, company_id) VALUES (10, 'Anton', 1)
-            ",
+            '
+                INSERT INTO companies (id, name)
+                VALUES (1, \'Mindgarden\')
+            ',
         );
         $conn->execute(
             '
-                INSERT INTO posts_nested (id, author_id) VALUES (100, 10)
+                INSERT INTO authors2 (id, name, company_id)
+                VALUES (10, \'Anton\', 1)
+            ',
+        );
+        $conn->execute(
+            '
+                INSERT INTO posts_nested (id, author_id)
+                VALUES (100, 10)
             ',
         );
 

@@ -46,17 +46,20 @@ final class SelfReferenceIntegrationTest extends TestCase
 
         $conn->execute(
             '
-                INSERT INTO categories (id, parent_id) VALUES (1, NULL)
+                INSERT INTO categories (id, parent_id)
+                VALUES (1, NULL)
             ',
         );
         $conn->execute(
             '
-                INSERT INTO categories (id, parent_id) VALUES (2, 1)
+                INSERT INTO categories (id, parent_id)
+                VALUES (2, 1)
             ',
         );
         $conn->execute(
             '
-                INSERT INTO categories (id, parent_id) VALUES (3, 1)
+                INSERT INTO categories (id, parent_id)
+                VALUES (3, 1)
             ',
         );
 

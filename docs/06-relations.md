@@ -14,6 +14,13 @@
 
 > Важно: сейчас подгрузка работает не через JOIN'ы, а через отдельные запросы (batch), чтобы не раздувать SQL и не усложнять гидрацию.
 
+## Ключи связей
+
+Ключи связей (`joinColumn`, `referencedColumn`, `localKey`, `foreignKey`, `parentKey`, `relatedKey`, `targetKey`,
+`firstKey`, `secondKey`) — это имена колонок; имя свойства тоже допускается и переводится в колонку через
+`#[Column]`. Одинаково работают `load()`, `with()`, `whereHas()`, `withCount()` и pivot helpers. Подробнее —
+в [Атрибуты и метаданные](02-metadata-and-attributes.md#ключи-связей).
+
 ## Состояние загрузки relation
 
 Значение relation и факт её загрузки — разные состояния. Entity при этом остаётся обычным объектом и не реализует
@@ -436,6 +443,9 @@ $em->pivot($user, 'roles')->syncWithPivotData([
 3) Связи, которые уже есть:
    - при `updatePivot=false` pivot-данные не трогаются
    - при `updatePivot=true` выполняется UPDATE по полям из `pivotData` (если массив не пустой)
+
+Значение owner для колонки `foreignPivotKey` берётся из ключа `parentKey` связи (по умолчанию `id`),
+так же как при загрузке связи.
 
 > Важно: pivot helpers пишут напрямую в БД (вне UnitOfWork).
 > Если у вас уже загружены связи через `$em->load(...)`, то после изменения pivot может понадобиться повторный `$em->load(...)`.

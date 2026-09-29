@@ -101,6 +101,28 @@ nullable-типы и касты custom repository). После обновлен�
 #[GeneratedValue(strategy: 'uuid')] // auto|uuid|none
 ```
 
+- `auto` — значение генерирует БД (autoincrement/identity); после INSERT ORM записывает в свойство `lastInsertId()`.
+  Свойство должно быть nullable (`?int $id = null`).
+- `uuid` — ORM генерирует UUID перед INSERT (перед событием `OnCreate`), если id не задан (`null` или свойство
+  не инициализировано). По умолчанию используется UUIDv7 (`RamseyUuidGenerator`); свой генератор
+  (`UuidGeneratorInterface`) задаётся через `EntityManagerConfig(uuidGenerator: ...)`. Если свойство типизировано
+  как `string`, записывается строковое представление UUID.
+- `none` (по умолчанию) — id задаёт приложение.
+
+Для `uuid` удобно объявлять id как неинициализированное `readonly`-свойство:
+
+```php
+#[Id]
+#[GeneratedValue(strategy: 'uuid')]
+#[Column(type: 'uuid')]
+public readonly UuidInterface $id;
+
+public function id(): ?UuidInterface
+{
+    return $this->id ?? null;
+}
+```
+
 ### #[NotMapped]
 
 Исключает свойство из маппинга в БД.
@@ -114,11 +136,12 @@ nullable-типы и касты custom repository). После обновлен�
 `#[BelongsTo]` — рекомендуемый синтаксис для связи **many-to-one**.
 
 Важно:
-- `joinColumn` — это **имя свойства сущности** (camelCase), например `authorId`
+- `joinColumn` — ключ текущей сущности: имя колонки (`author_id`) или имя свойства (`authorId`),
+  см. «Ключи связей» ниже
 - если `joinColumn` не задан, ORM пытается вывести его по конвенции: `<имя_связи>Id`
   - пример: связь `author` -> `authorId`
 - имя колонки в БД задаётся через `#[Column(name: ...)]`, например `author_id`
-- `referencedColumn` по умолчанию равен `id`
+- `referencedColumn` — ключ target-сущности, по умолчанию `id`
 - нельзя ставить `#[BelongsTo]` и `#[ManyToOne]` одновременно на одно свойство (будет исключение)
 
 Пример:
@@ -145,6 +168,27 @@ use PhpSoftBox\Orm\Metadata\Attributes\ManyToOne;
 #[ManyToOne(targetEntity: Author::class, joinColumn: 'authorId', referencedColumn: 'id')]
 public ?Author $author = null;
 ```
+
+#### Ключи связей
+
+Все ключи связей (`joinColumn`, `referencedColumn`, `localKey`, `foreignKey`, `parentKey`, `relatedKey`,
+`targetKey`, `firstKey`, `secondKey`, `typeColumn`, `idColumn`) имеют одну семантику: это **имя колонки** в таблице
+соответствующей сущности. Допускается и имя свойства — ORM переводит его в колонку через `#[Column]`.
+
+- В SQL (eager loading, `whereHas()`, `withCount()` и т.п.) используется колонка.
+- Для чтения значения из сущности используется свойство, на которое маппится эта колонка.
+- Ключ, которого нет в метаданных, считается и колонкой, и свойством с тем же именем.
+
+```php
+#[Column(name: 'author_code', type: 'string')]
+public string $authorCode;
+
+// Эквивалентные объявления:
+#[BelongsTo(targetEntity: Author::class, joinColumn: 'author_code', referencedColumn: 'external_code')]
+#[BelongsTo(targetEntity: Author::class, joinColumn: 'authorCode', referencedColumn: 'externalCode')]
+```
+
+Ключи pivot-таблицы (`pivotTable`, `foreignPivotKey`, `relatedPivotKey`) — всегда реальные колонки pivot-таблицы.
 
 #### #[HasOne] / #[HasMany]
 

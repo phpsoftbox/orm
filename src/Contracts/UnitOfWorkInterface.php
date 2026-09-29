@@ -60,6 +60,17 @@ interface UnitOfWorkInterface
      */
     public function isDirty(EntityInterface $entity, array $currentData): bool;
 
+    /**
+     * Возвращает колонки, значения которых отличаются от последнего снапшота.
+     *
+     * Колонки, которых нет в снапшоте, считаются изменёнными. Если снапшота нет, возвращает null
+     * (изменения определить нельзя — нужно записывать все колонки).
+     *
+     * @param array<string, mixed> $currentData
+     * @return array<string, mixed>|null
+     */
+    public function changedFields(EntityInterface $entity, array $currentData): ?array;
+
     public function isRelationLoaded(EntityInterface $entity, string $relation): bool;
 
     public function markRelationLoaded(EntityInterface $entity, string $relation): void;

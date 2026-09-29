@@ -61,13 +61,15 @@ final class BelongsToManyIntegrationTest extends TestCase
         $conn = $this->createConnection();
 
         $conn->execute(
-            "
-                INSERT INTO roles_rel (id, name) VALUES (12, 'admin')
-            ",
+            '
+                INSERT INTO roles_rel (id, name)
+                VALUES (12, \'admin\')
+            ',
         );
         $conn->execute(
             '
-                INSERT INTO user_role_rel (user_id, role_id, is_active) VALUES (1, 12, 0)
+                INSERT INTO user_role_rel (user_id, role_id, is_active)
+                VALUES (1, 12, 0)
             ',
         );
 
@@ -149,28 +151,33 @@ final class BelongsToManyIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_roles_rel (id, name) VALUES (1, 'Anton')
-            ",
-        );
-        $conn->execute(
-            "
-                INSERT INTO roles_rel (id, name) VALUES (10, 'admin')
-            ",
-        );
-        $conn->execute(
-            "
-                INSERT INTO roles_rel (id, name) VALUES (11, 'user')
-            ",
-        );
-        $conn->execute(
             '
-                INSERT INTO user_role_rel (user_id, role_id) VALUES (1, 10)
+                INSERT INTO users_roles_rel (id, name)
+                VALUES (1, \'Anton\')
             ',
         );
         $conn->execute(
             '
-                INSERT INTO user_role_rel (user_id, role_id) VALUES (1, 11)
+                INSERT INTO roles_rel (id, name)
+                VALUES (10, \'admin\')
+            ',
+        );
+        $conn->execute(
+            '
+                INSERT INTO roles_rel (id, name)
+                VALUES (11, \'user\')
+            ',
+        );
+        $conn->execute(
+            '
+                INSERT INTO user_role_rel (user_id, role_id)
+                VALUES (1, 10)
+            ',
+        );
+        $conn->execute(
+            '
+                INSERT INTO user_role_rel (user_id, role_id)
+                VALUES (1, 11)
             ',
         );
 

@@ -65,12 +65,12 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -110,10 +110,10 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
-                VALUES (1, 'Alive', NULL)
-            ",
+                VALUES (1, \'Alive\', NULL)
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -146,12 +146,12 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -238,12 +238,12 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -276,12 +276,12 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'alive', NULL),
-                    (2, 'deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'alive\', NULL),
+                    (2, \'deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -314,12 +314,12 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Deleted', '2026-01-01T00:00:00+00:00')
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Deleted\', \'2026-01-01T00:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -477,13 +477,13 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Alive 2', NULL),
-                    (3, 'Alive 3', NULL)
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Alive 2\', NULL),
+                    (3, \'Alive 3\', NULL)
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -519,13 +519,13 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO soft_delete_entities (id, name, deleted_datetime)
                 VALUES
-                    (1, 'Alive', NULL),
-                    (2, 'Alive 2', NULL),
-                    (3, 'Alive 3', NULL)
-            ",
+                    (1, \'Alive\', NULL),
+                    (2, \'Alive 2\', NULL),
+                    (3, \'Alive 3\', NULL)
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -678,22 +678,17 @@ final class OrmSelectQueryBuilderTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO posts_comments (id, title)
-                VALUES
-                    (1, 'Hello'),
-                    (2, 'Empty')
-            ",
+                VALUES (1, \'Hello\'), (2, \'Empty\')
+            ',
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO comments (id, post_id, body, likes)
-                VALUES
-                    (10, 1, 'a', 3),
-                    (11, 1, 'b', 5),
-                    (12, 1, 'c', 0)
-            ",
+                VALUES (10, 1, \'a\', 3), (11, 1, \'b\', 5), (12, 1, \'c\', 0)
+            ',
         );
 
         return $conn;
@@ -711,8 +706,13 @@ final class OrmSelectQueryBuilderTest extends TestCase
         $conn->execute('CREATE TABLE morph_posts (id INTEGER PRIMARY KEY, title TEXT)');
         $conn->execute('CREATE TABLE morph_videos (id INTEGER PRIMARY KEY, title TEXT)');
 
-        $conn->execute("INSERT INTO morph_posts (id, title) VALUES (1, 'Hello')");
-        $conn->execute("INSERT INTO morph_logs (id, subjectType, subjectId) VALUES (1, 'post', 1), (2, 'video', 10), (3, 'unknown', 1)");
+        $conn->execute('INSERT INTO morph_posts (id, title) VALUES (1, \'Hello\')');
+        $conn->execute(
+            '
+                INSERT INTO morph_logs (id, subjectType, subjectId)
+                VALUES (1, \'post\', 1), (2, \'video\', 10), (3, \'unknown\', 1)
+            ',
+        );
 
         return $conn;
     }

@@ -32,12 +32,13 @@ use Ramsey\Uuid\UuidInterface;
 #[Entity(table: 'users')]
 final class User implements EntityInterface
 {
-    public function __construct(
-        #[Id]
-        #[GeneratedValue(strategy: 'uuid')]
-        #[Column(type: 'uuid')]
-        public readonly UuidInterface $id,
+    // UUID генерирует ORM при INSERT (UUIDv7), поэтому id не передаётся в конструктор.
+    #[Id]
+    #[GeneratedValue(strategy: 'uuid')]
+    #[Column(type: 'uuid')]
+    public readonly UuidInterface $id;
 
+    public function __construct(
         #[Column(type: 'string', length: 255)]
         public string $name,
 
@@ -45,12 +46,25 @@ final class User implements EntityInterface
         public ?string $computed = null,
     ) {}
 
-    public function id(): int|UuidInterface|null
+    public function id(): ?UuidInterface
     {
-        return $this->id;
+        // До INSERT свойство не инициализировано.
+        return $this->id ?? null;
     }
 }
 ```
+
+```php
+$user = new User(name: 'Anton');
+
+$em->persist($user);
+$em->flush();
+
+$user->id(); // UuidInterface, сгенерированный ORM
+```
+
+ORM читает и записывает mapped-свойства через Reflection, поэтому свойства могут быть `readonly`
+и иметь любую видимость. Инициализированное `readonly`-свойство ORM не меняет (в том числе в `refresh()`).
 
 > Совет: если вы не указываете `table` в `#[Entity]`, то ORM попытается вывести имя таблицы по конвенции
 > (через Inflector и NamingConvention). Для предсказуемости в продакшене часто задают `table` явно.

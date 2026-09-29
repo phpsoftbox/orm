@@ -39,7 +39,6 @@ final readonly class RelationMetadata
         public string $parentKey = 'id',
         public string $relatedKey = 'id',
         public ?string $pivotEntity = null,
-        public string $pivotAccessor = 'pivot',
 
         // hasManyThrough
         public ?string $throughEntity = null,

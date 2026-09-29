@@ -26,6 +26,12 @@ interface EntityManagerInterface
     public function unitOfWork(): UnitOfWorkInterface;
 
     /**
+     * Забывает все отслеживаемые сущности и несохранённые изменения (очищает UnitOfWork). Вызывается между задачами
+     * долгоживущего процесса, чтобы identity map не рос и не отдавал устаревшие сущности.
+     */
+    public function clear(): void;
+
+    /**
      * Ставит сущность в очередь на сохранение.
      */
     public function persist(EntityInterface $entity): void;

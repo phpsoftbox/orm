@@ -111,7 +111,7 @@ final class EntityBulkWriterTest extends TestCase
     public function restoreClearsSoftDeleteColumn(): void
     {
         $conn = $this->connectionWithRows();
-        $conn->execute("UPDATE bulk_write_entities SET deleted_datetime = '2026-01-01 00:00:00' WHERE id IN (1, 2)");
+        $conn->execute('UPDATE bulk_write_entities SET deleted_datetime = \'2026-01-01 00:00:00\' WHERE id IN (1, 2)');
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
 
@@ -216,13 +216,13 @@ final class EntityBulkWriterTest extends TestCase
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO bulk_write_entities (id, name, deleted_datetime, updated_datetime)
                 VALUES
-                    (1, 'Alpha', NULL, NULL),
-                    (2, 'Alpha', NULL, NULL),
-                    (3, 'Beta', NULL, NULL)
-            ",
+                    (1, \'Alpha\', NULL, NULL),
+                    (2, \'Alpha\', NULL, NULL),
+                    (3, \'Beta\', NULL, NULL)
+            ',
         );
 
         return $conn;
