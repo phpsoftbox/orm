@@ -56,19 +56,22 @@ final class HasManyIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO posts_comments (id, title) VALUES (1, 'Hello'), (2, 'Empty')
-            ",
+            '
+                INSERT INTO posts_comments (id, title)
+                VALUES (1, \'Hello\'), (2, \'Empty\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments (id, post_id, body) VALUES (10, 1, 'a')
-            ",
+            '
+                INSERT INTO comments (id, post_id, body)
+                VALUES (10, 1, \'a\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments (id, post_id, body) VALUES (11, 1, 'b')
-            ",
+            '
+                INSERT INTO comments (id, post_id, body)
+                VALUES (11, 1, \'b\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -91,7 +94,7 @@ final class HasManyIntegrationTest extends TestCase
         self::assertSame([], $items[1]->comments->all());
         self::assertTrue($em->unitOfWork()->isRelationLoaded($items[1], 'comments'));
 
-        $conn->execute("INSERT INTO comments (id, post_id, body) VALUES (12, 1, 'c')");
+        $conn->execute('INSERT INTO comments (id, post_id, body) VALUES (12, 1, \'c\')');
 
         $em->loadMissing($items, ['comments']);
         self::assertCount(2, $items[0]->comments?->all() ?? []);
@@ -133,24 +136,28 @@ final class HasManyIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO posts_comments (id, title) VALUES (1, 'Hello')
-            ",
+            '
+                INSERT INTO posts_comments (id, title)
+                VALUES (1, \'Hello\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments (id, post_id, body) VALUES (10, 1, 'a')
-            ",
+            '
+                INSERT INTO comments (id, post_id, body)
+                VALUES (10, 1, \'a\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments (id, post_id, body) VALUES (11, 1, 'b')
-            ",
+            '
+                INSERT INTO comments (id, post_id, body)
+                VALUES (11, 1, \'b\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments (id, post_id, body) VALUES (12, 1, 'c')
-            ",
+            '
+                INSERT INTO comments (id, post_id, body)
+                VALUES (12, 1, \'c\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

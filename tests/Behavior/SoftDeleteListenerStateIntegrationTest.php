@@ -117,9 +117,12 @@ final class SoftDeleteListenerStateIntegrationTest extends TestCase
                 status VARCHAR(32) NOT NULL
             )
         ');
-        $connection->execute("
-            INSERT INTO hard_delete_status_entities (id, status) VALUES (1, 'active')
-        ");
+        $connection->execute(
+            '
+                INSERT INTO hard_delete_status_entities (id, status)
+                VALUES (1, \'active\')
+            ',
+        );
 
         $em = new EntityManager(
             connection: $connection,
@@ -187,9 +190,12 @@ final class SoftDeleteListenerStateIntegrationTest extends TestCase
                 deleted_datetime VARCHAR(64) NULL
             )
         ');
-        $connection->execute("
-            INSERT INTO soft_delete_status_entities (id, name, status) VALUES (1, 'Post', 'active')
-        ");
+        $connection->execute(
+            '
+                INSERT INTO soft_delete_status_entities (id, name, status)
+                VALUES (1, \'Post\', \'active\')
+            ',
+        );
 
         return $connection;
     }

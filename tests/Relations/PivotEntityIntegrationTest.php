@@ -68,22 +68,24 @@ final class PivotEntityIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO users_pivot_rel (id, name) VALUES (1, 'Anton')
-            ",
+            '
+                INSERT INTO users_pivot_rel (id, name)
+                VALUES (1, \'Anton\')
+            ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO roles_pivot_rel (id, name) VALUES (10, 'admin')
-            ",
+            '
+                INSERT INTO roles_pivot_rel (id, name)
+                VALUES (10, \'admin\')
+            ',
         );
 
         $conn->execute(
-            "
+            '
                 INSERT INTO user_role_pivot_rel (user_id, role_id, created_datetime)
-                VALUES (1, 10, '2026-01-27T12:00:00+00:00')
-            ",
+                VALUES (1, 10, \'2026-01-27T12:00:00+00:00\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

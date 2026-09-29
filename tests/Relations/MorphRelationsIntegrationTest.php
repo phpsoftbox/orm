@@ -69,25 +69,29 @@ final class MorphRelationsIntegrationTest extends TestCase
 
         $conn->execute(
             '
-                INSERT INTO posts_rel (id, author_id) VALUES (10, 1)
+                INSERT INTO posts_rel (id, author_id)
+                VALUES (10, 1)
             ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO videos (id, title) VALUES (77, 'Video Title')
-            ",
+            '
+                INSERT INTO videos (id, title)
+                VALUES (77, \'Video Title\')
+            ',
         );
 
         $conn->execute(
-            "
-                INSERT INTO morph_comments (id, commentable_type, commentable_id) VALUES (1, 'post', 10)
-            ",
+            '
+                INSERT INTO morph_comments (id, commentable_type, commentable_id)
+                VALUES (1, \'post\', 10)
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO morph_comments (id, commentable_type, commentable_id) VALUES (2, 'video', 77)
-            ",
+            '
+                INSERT INTO morph_comments (id, commentable_type, commentable_id)
+                VALUES (2, \'video\', 77)
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -140,24 +144,28 @@ final class MorphRelationsIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO posts_morph (id, title) VALUES (1, 'Post 1')
-            ",
+            '
+                INSERT INTO posts_morph (id, title)
+                VALUES (1, \'Post 1\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO morph_comments (id, commentable_type, commentable_id) VALUES (10, 'post', 1)
-            ",
+            '
+                INSERT INTO morph_comments (id, commentable_type, commentable_id)
+                VALUES (10, \'post\', 1)
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO morph_comments (id, commentable_type, commentable_id) VALUES (11, 'post', 1)
-            ",
+            '
+                INSERT INTO morph_comments (id, commentable_type, commentable_id)
+                VALUES (11, \'post\', 1)
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO morph_comments (id, commentable_type, commentable_id) VALUES (12, 'video', 1)
-            ",
+            '
+                INSERT INTO morph_comments (id, commentable_type, commentable_id)
+                VALUES (12, \'video\', 1)
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

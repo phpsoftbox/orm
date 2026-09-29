@@ -31,7 +31,7 @@ final class EntityManagerTest extends TestCase
     #[Test]
     public function returnsConnection(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
 
         $em = new EntityManager($connection);
 
@@ -45,7 +45,7 @@ final class EntityManagerTest extends TestCase
     #[Test]
     public function autoResolvesRepositoryByConvention(): void
     {
-        $em = new EntityManager($this->createMock(ConnectionInterface::class));
+        $em = new EntityManager($this->createStub(ConnectionInterface::class));
 
         $repo = $em->repository(User::class);
 
@@ -58,7 +58,7 @@ final class EntityManagerTest extends TestCase
     #[Test]
     public function flushCallsRegisteredRepositories(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);
@@ -90,7 +90,7 @@ final class EntityManagerTest extends TestCase
     #[Test]
     public function throwsWhenEntityHasNoEntityAttribute(): void
     {
-        $em = new EntityManager($this->createMock(ConnectionInterface::class));
+        $em = new EntityManager($this->createStub(ConnectionInterface::class));
 
         $this->expectException(RepositoryNotRegisteredException::class);
 
@@ -104,7 +104,7 @@ final class EntityManagerTest extends TestCase
     #[Test]
     public function autoResolvesRepositoryUsingDefaultRepositoryNamespace(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
 
         $resolver = new DefaultRepositoryResolver([
             'PhpSoftBox\\Orm\\Tests\\Fixtures\\App\\Repository',

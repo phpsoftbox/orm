@@ -67,19 +67,22 @@ final class NestedHasManyIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO posts_nested_comments (id, title) VALUES (1, 'Hello')
-            ",
+            '
+                INSERT INTO posts_nested_comments (id, title)
+                VALUES (1, \'Hello\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO authors_nested (id, name) VALUES (10, 'Anton')
-            ",
+            '
+                INSERT INTO authors_nested (id, name)
+                VALUES (10, \'Anton\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments_nested (id, post_id, author_id, body) VALUES (100, 1, 10, 'a')
-            ",
+            '
+                INSERT INTO comments_nested (id, post_id, author_id, body)
+                VALUES (100, 1, 10, \'a\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -165,29 +168,34 @@ final class NestedHasManyIntegrationTest extends TestCase
         );
 
         $conn->execute(
-            "
-                INSERT INTO posts_nested_comments (id, title) VALUES (1, 'Hello')
-            ",
+            '
+                INSERT INTO posts_nested_comments (id, title)
+                VALUES (1, \'Hello\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO authors_nested (id, name) VALUES (10, 'Anton')
-            ",
+            '
+                INSERT INTO authors_nested (id, name)
+                VALUES (10, \'Anton\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO comments_nested (id, post_id, author_id, body) VALUES (100, 1, 10, 'a')
-            ",
+            '
+                INSERT INTO comments_nested (id, post_id, author_id, body)
+                VALUES (100, 1, 10, \'a\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO author_books_nested (id, author_id, title) VALUES (1000, 10, 'Clean Architecture')
-            ",
+            '
+                INSERT INTO author_books_nested (id, author_id, title)
+                VALUES (1000, 10, \'Clean Architecture\')
+            ',
         );
         $conn->execute(
-            "
-                INSERT INTO author_awards_nested (id, author_id, name) VALUES (2000, 10, 'Booker Prize')
-            ",
+            '
+                INSERT INTO author_awards_nested (id, author_id, name)
+                VALUES (2000, 10, \'Booker Prize\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());

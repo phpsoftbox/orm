@@ -35,7 +35,7 @@ final class EntityManagerChangeLogTest extends TestCase
     #[Test]
     public function createWritesChangelogRecordWithActualIdAndWithoutNullToNullDiff(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);
@@ -88,7 +88,7 @@ final class EntityManagerChangeLogTest extends TestCase
     #[Test]
     public function updateWritesChangelogRecordWithFieldDiff(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);
@@ -152,7 +152,7 @@ final class EntityManagerChangeLogTest extends TestCase
     #[Test]
     public function loggerFailureDoesNotBreakFlush(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);
@@ -193,7 +193,7 @@ final class EntityManagerChangeLogTest extends TestCase
     #[Test]
     public function attributeIgnoredFieldsAreRedactedInChangelog(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);
@@ -250,7 +250,7 @@ final class EntityManagerChangeLogTest extends TestCase
     #[Test]
     public function globalIgnoredFieldsFromDiMaskSpecifiedFieldsOnly(): void
     {
-        $connection = $this->createMock(ConnectionInterface::class);
+        $connection = $this->createStub(ConnectionInterface::class);
         $connection->method('transaction')->willReturnCallback(static fn (callable $fn) => $fn());
 
         $persister = $this->createMock(EntityPersisterInterface::class);

@@ -21,7 +21,7 @@ final class ConnectionEntityManagerRegistryTest extends TestCase
     #[Test]
     public function defaultUsesConfiguredDefaultConnection(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -44,7 +44,7 @@ final class ConnectionEntityManagerRegistryTest extends TestCase
     #[Test]
     public function forConnectionUsesReadConnectionWhenWriteFlagIsFalse(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -64,7 +64,7 @@ final class ConnectionEntityManagerRegistryTest extends TestCase
     #[Test]
     public function forEntityUsesConnectionFromEntityMetadata(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -86,7 +86,7 @@ final class ConnectionEntityManagerRegistryTest extends TestCase
     #[Test]
     public function forEntityFallsBackToDefaultWhenEntityHasNoConnection(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -108,7 +108,7 @@ final class ConnectionEntityManagerRegistryTest extends TestCase
     #[Test]
     public function passesGlobalChangelogIgnoredFieldsToEntityManager(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections
             ->expects(self::once())
@@ -134,7 +134,7 @@ final class ConnectionEntityManagerRegistryTest extends TestCase
     #[Test]
     public function managersShareRegistryRuntimeState(): void
     {
-        $connection  = $this->createMock(ConnectionInterface::class);
+        $connection  = $this->createStub(ConnectionInterface::class);
         $connections = $this->createMock(ConnectionManagerInterface::class);
         $connections->expects(self::exactly(2))->method('write')->willReturn($connection);
 

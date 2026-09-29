@@ -26,7 +26,7 @@ final class IdentityMapHydrationIntegrationTest extends TestCase
         $connection = new Connection($pdo, new SqliteDriver());
 
         $connection->execute('CREATE TABLE test_entities (id INTEGER PRIMARY KEY, name TEXT)');
-        $connection->execute("INSERT INTO test_entities (id, name) VALUES (1, 'One')");
+        $connection->execute('INSERT INTO test_entities (id, name) VALUES (1, \'One\')');
 
         $entityManager = new EntityManager($connection);
 

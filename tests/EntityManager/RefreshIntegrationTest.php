@@ -46,13 +46,10 @@ final class RefreshIntegrationTest extends TestCase
             ',
         );
         $conn->execute(
-            "
-                INSERT INTO refresh_casted_entities (
-                    id, is_enabled, created_datetime, status, payload, external_id, note
-                ) VALUES (
-                    1, 0, NULL, 'disabled', '{}', NULL, 'before'
-                )
-            ",
+            '
+                INSERT INTO refresh_casted_entities (id, is_enabled, created_datetime, status, payload, external_id, note)
+                VALUES (1, 0, NULL, \'disabled\', \'{}\', NULL, \'before\')
+            ',
         );
 
         $em = new EntityManager(connection: $conn, unitOfWork: new UnitOfWork());
@@ -72,7 +69,8 @@ final class RefreshIntegrationTest extends TestCase
         $conn->execute(
             '
                 UPDATE refresh_casted_entities
-                SET is_enabled = :is_enabled,
+                SET
+                    is_enabled = :is_enabled,
                     created_datetime = :created_datetime,
                     status = :status,
                     payload = :payload,
@@ -136,7 +134,8 @@ final class RefreshIntegrationTest extends TestCase
 
         $conn->execute(
             '
-                INSERT INTO posts_rel (id, author_id) VALUES (1, 10)
+                INSERT INTO posts_rel (id, author_id)
+                VALUES (1, 10)
             ',
         );
 
