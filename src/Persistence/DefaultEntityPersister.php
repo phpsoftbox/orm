@@ -13,14 +13,13 @@ use PhpSoftBox\Orm\Exception\EntityPersistException;
 use PhpSoftBox\Orm\Metadata\ClassMetadata;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
 use PhpSoftBox\Orm\Repository\AutoEntityMapper;
-use ReflectionObject;
+use PhpSoftBox\Orm\Support\PropertyAccessor;
 
 use function array_key_exists;
 use function count;
 use function in_array;
 use function is_object;
 use function method_exists;
-use function property_exists;
 
 /**
  * Persister по умолчанию.
@@ -86,6 +85,10 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
         $data = $dataOverride ?? $this->mapper->extract($entity);
 
         $filtered = $this->filterUpdatableColumns($meta, $pk, $data);
+        if ($filtered === []) {
+            // Нечего обновлять: изменились только необновляемые колонки.
+            return;
+        }
 
         $this->connection
             ->query()
@@ -263,21 +266,10 @@ final readonly class DefaultEntityPersister implements EntityPersisterInterface
 
     private function setEntityProperty(EntityInterface $entity, string $property, mixed $value): void
     {
-        if (!property_exists($entity, $property)) {
+        if (!PropertyAccessor::has($entity, $property)) {
             return;
         }
 
-        $ref = new ReflectionObject($entity);
-
-        if (!$ref->hasProperty($property)) {
-            return;
-        }
-
-        $prop = $ref->getProperty($property);
-        if (!$prop->isPublic()) {
-            $prop->setAccessible(true);
-        }
-
-        $prop->setValue($entity, $value);
+        PropertyAccessor::write($entity, $property, $value);
     }
 }

@@ -10,9 +10,9 @@ use PhpSoftBox\DataCasting\Options\TypeCastOptionsManager;
 use PhpSoftBox\Orm\Exception\UninitializedMappedPropertyException;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
 use PhpSoftBox\Orm\Metadata\PropertyMetadata;
+use PhpSoftBox\Orm\Support\PropertyAccessor;
 use ReflectionClass;
 use ReflectionException;
-use ReflectionObject;
 
 use function array_key_exists;
 
@@ -21,8 +21,8 @@ use function array_key_exists;
  *
  * Задача: минимальная база для auto-hydrate/extract.
  *
- * Ограничения текущей версии:
- * - пишет/читает только публичные свойства
+ * Особенности:
+ * - читает/пишет свойства через Reflection (любая видимость, включая `readonly`)
  * - создаёт сущность через `newInstanceWithoutConstructor()`
  * - типы берём из #[Column(type: ...)]
  */
@@ -69,7 +69,7 @@ final readonly class AutoEntityMapper
             $options = $this->optionsFromMetadata($colMeta, $jsonContext);
             $casted  = $this->typeCaster->castFrom($colMeta->type, $value, $options);
 
-            $this->setPublicProperty($entity, $property, $casted);
+            PropertyAccessor::write($entity, $property, $casted);
         }
 
         return $entity;
@@ -80,19 +80,16 @@ final readonly class AutoEntityMapper
      */
     public function extract(object $entity): array
     {
-        $meta       = $this->metadata->for($entity::class);
-        $reflection = new ReflectionObject($entity);
+        $meta = $this->metadata->for($entity::class);
 
         $data = [];
 
         foreach ($meta->columns as $property => $colMeta) {
-            if (!$reflection->getProperty($property)->isInitialized($entity)) {
+            if (!PropertyAccessor::isInitialized($entity, $property)) {
                 throw UninitializedMappedPropertyException::forProperty($entity::class, $property);
             }
 
-            $value                  = $this->getPublicProperty($entity, $property);
-            $options                = $this->optionsFromMetadata($colMeta);
-            $data[$colMeta->column] = $this->typeCaster->castTo($colMeta->type, $value, $options);
+            $data[$colMeta->column] = $this->castToMetadata($colMeta, PropertyAccessor::read($entity, $property));
         }
 
         return $data;
@@ -108,6 +105,14 @@ final readonly class AutoEntityMapper
             $value,
             $this->optionsFromMetadata($meta, $hydrationContext),
         );
+    }
+
+    /**
+     * Приводит PHP-значение свойства к значению для БД по метаданным колонки.
+     */
+    public function castToMetadata(PropertyMetadata $meta, mixed $value): mixed
+    {
+        return $this->typeCaster->castTo($meta->type, $value, $this->optionsFromMetadata($meta));
     }
 
     /**
@@ -147,17 +152,5 @@ final readonly class AutoEntityMapper
         }
 
         return $options;
-    }
-
-    private function setPublicProperty(object $entity, string $property, mixed $value): void
-    {
-        // Минимальный безопасный вариант: только public свойства.
-        // Далее можно расширить на property hooks/private via ReflectionProperty.
-        $entity->$property = $value;
-    }
-
-    private function getPublicProperty(object $entity, string $property): mixed
-    {
-        return $entity->$property;
     }
 }

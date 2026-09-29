@@ -4,16 +4,26 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Tests;
 
+use PDO;
+use PhpSoftBox\Database\Connection\Connection;
 use PhpSoftBox\Database\Connection\ConnectionManagerInterface;
 use PhpSoftBox\Database\Contracts\ConnectionInterface;
+use PhpSoftBox\Database\Driver\SqliteDriver;
+use PhpSoftBox\Orm\Behavior\ContainerListenerResolver;
 use PhpSoftBox\Orm\ConnectionEntityManagerFactory;
 use PhpSoftBox\Orm\EntityManager;
+use PhpSoftBox\Orm\Tests\Behavior\Fixtures\ArrayContainer;
+use PhpSoftBox\Orm\Tests\Behavior\Fixtures\DependentListener;
+use PhpSoftBox\Orm\Tests\Behavior\Fixtures\DependentListenerEntity;
+use PhpSoftBox\Orm\Tests\Behavior\Fixtures\ListenerNameSource;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversMethod;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 
 #[CoversClass(ConnectionEntityManagerFactory::class)]
+#[CoversMethod(ConnectionEntityManagerFactory::class, 'create')]
 final class ConnectionEntityManagerFactoryTest extends TestCase
 {
     #[Test]
@@ -97,5 +107,41 @@ final class ConnectionEntityManagerFactoryTest extends TestCase
         self::assertSame($factory->runtimeRegistry(), $dispatcher->unitOfWork()->runtimeRegistry());
         self::assertSame($factory->runtimeRegistry(), $tenant->unitOfWork()->runtimeRegistry());
         self::assertNotSame($dispatcher->unitOfWork(), $tenant->unitOfWork());
+    }
+
+    /**
+     * Проверим, что фабрика передаёт в EntityManager резолвер listeners:
+     * listener сущности с зависимостями берётся из контейнера.
+     *
+     * @see ConnectionEntityManagerFactory::create()
+     */
+    #[Test]
+    public function createPassesListenerResolverToEntityManager(): void
+    {
+        $pdo = new PDO('sqlite::memory:');
+
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $connection = new Connection($pdo, new SqliteDriver());
+
+        $connection->execute(
+            'CREATE TABLE dependent_listener_entities (id INTEGER PRIMARY KEY AUTOINCREMENT, name VARCHAR(255) NOT NULL)',
+        );
+
+        $connections = $this->createStub(ConnectionManagerInterface::class);
+        $connections->method('write')->willReturn($connection);
+
+        $factory = new ConnectionEntityManagerFactory(
+            connections: $connections,
+            listenerResolver: new ContainerListenerResolver(new ArrayContainer([
+                DependentListener::class => new DependentListener(new ListenerNameSource('from_container')),
+            ])),
+        );
+
+        $em = $factory->create();
+        $em->persist(new DependentListenerEntity(name: 'original'));
+        $em->flush();
+
+        self::assertSame('from_container', $connection->fetchOne('SELECT name FROM dependent_listener_entities')['name']);
     }
 }

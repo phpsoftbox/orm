@@ -37,12 +37,7 @@ final readonly class PivotRelationWriter
     {
         $relation = $this->belongsToManyMeta($owner, $relationProperty);
 
-        $ownerId = $owner->id();
-        if ($ownerId === null) {
-            throw new InvalidArgumentException('Cannot attach relation: owner id is null.');
-        }
-
-        $ownerId   = $ownerId instanceof UuidInterface ? $ownerId->toString() : $ownerId;
+        $ownerId   = $this->ownerKey($owner, $relation, 'attach');
         $relatedId = $relatedId instanceof UuidInterface ? $relatedId->toString() : $relatedId;
 
         $data = array_merge(
@@ -70,12 +65,7 @@ final readonly class PivotRelationWriter
     {
         $relation = $this->belongsToManyMeta($owner, $relationProperty);
 
-        $ownerId = $owner->id();
-        if ($ownerId === null) {
-            throw new InvalidArgumentException('Cannot detach relation: owner id is null.');
-        }
-
-        $ownerId   = $ownerId instanceof UuidInterface ? $ownerId->toString() : $ownerId;
+        $ownerId   = $this->ownerKey($owner, $relation, 'detach');
         $relatedId = $relatedId instanceof UuidInterface ? $relatedId->toString() : $relatedId;
 
         $this->em
@@ -98,12 +88,7 @@ final readonly class PivotRelationWriter
     {
         $relation = $this->belongsToManyMeta($owner, $relationProperty);
 
-        $ownerId = $owner->id();
-        if ($ownerId === null) {
-            throw new InvalidArgumentException('Cannot sync relation: owner id is null.');
-        }
-
-        $ownerId = $ownerId instanceof UuidInterface ? $ownerId->toString() : $ownerId;
+        $ownerId = $this->ownerKey($owner, $relation, 'sync');
 
         $normalized = [];
         foreach ($relatedIds as $rid) {
@@ -162,12 +147,7 @@ final readonly class PivotRelationWriter
     ): void {
         $relation = $this->belongsToManyMeta($owner, $relationProperty);
 
-        $ownerId = $owner->id();
-        if ($ownerId === null) {
-            throw new InvalidArgumentException('Cannot sync relation: owner id is null.');
-        }
-
-        $ownerId = $ownerId instanceof UuidInterface ? $ownerId->toString() : $ownerId;
+        $ownerId = $this->ownerKey($owner, $relation, 'sync');
 
         /** @var array<string, array{relatedId: int|string, pivotData: array<string, mixed>}> $desired */
         $desired = [];
@@ -245,6 +225,22 @@ final readonly class PivotRelationWriter
                 $this->invalidate($owner, $relationProperty);
             }
         }
+    }
+
+    /**
+     * Значение ключа owner для pivot-таблицы: свойство/колонка `parentKey` связи (по умолчанию `id`).
+     */
+    private function ownerKey(EntityInterface $owner, RelationMetadata $relation, string $operation): int|string|float
+    {
+        $value = new RelationKeyResolver($this->em->metadataProvider())->readValue($owner, $relation->parentKey);
+
+        if ($value === null) {
+            throw new InvalidArgumentException(
+                'Cannot ' . $operation . ' relation: owner key "' . $relation->parentKey . '" is null.',
+            );
+        }
+
+        return $value;
     }
 
     private function invalidate(EntityInterface $owner, string $relationProperty): void

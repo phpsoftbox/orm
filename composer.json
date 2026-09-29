@@ -18,6 +18,7 @@
         "phpsoftbox/database-lookup": "dev-master",
         "phpsoftbox/encryptor": "dev-master",
         "phpsoftbox/inflector": "dev-master",
+        "psr/container": "^2.0",
         "ramsey/uuid": "^4.7"
     },
     "require-dev": {

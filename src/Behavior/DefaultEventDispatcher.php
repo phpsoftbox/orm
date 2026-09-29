@@ -4,18 +4,15 @@ declare(strict_types=1);
 
 namespace PhpSoftBox\Orm\Behavior;
 
-use PhpSoftBox\Orm\Behavior\Attributes\Listen;
-use ReflectionClass;
-
-use function is_callable;
-use function str_starts_with;
-
 /**
  * Простой синхронный диспетчер событий ORM.
  *
- * Делает две вещи:
- * 1) вызывает модульные хуки, которые передал внешний код через registerListenerObject()
- * 2) отражением ищет методы с #[Listen(...)] в зарегистрированных listener-объектах
+ * Вызывает у зарегистрированных listener-объектов методы, подходящие под событие:
+ * - методы с #[Listen(Event::class)];
+ * - методы `on*(Event $event)` без атрибута #[Listen] (соглашение по имени).
+ *
+ * Один метод вызывается на событие не более одного раза: если у метода есть #[Listen],
+ * соглашение по имени для него не применяется.
  */
 final class DefaultEventDispatcher implements EventDispatcherInterface
 {
@@ -24,6 +21,9 @@ final class DefaultEventDispatcher implements EventDispatcherInterface
      */
     private array $listenerObjects = [];
 
+    /**
+     * @param iterable<object> $listenerObjects
+     */
     public function __construct(
         iterable $listenerObjects = [],
     ) {
@@ -39,38 +39,8 @@ final class DefaultEventDispatcher implements EventDispatcherInterface
 
     public function dispatch(object $event): void
     {
-        $eventClass = $event::class;
-
         foreach ($this->listenerObjects as $listener) {
-            $rc = new ReflectionClass($listener);
-
-            foreach ($rc->getMethods() as $method) {
-                foreach ($method->getAttributes(Listen::class) as $attr) {
-                    /** @var Listen $listen */
-                    $listen = $attr->newInstance();
-
-                    if ($listen->event !== $eventClass) {
-                        continue;
-                    }
-
-                    $callable = [$listener, $method->getName()];
-                    if (is_callable($callable)) {
-                        $callable($event);
-                    }
-                }
-
-                // (если уже есть reflection-dispatch по имени метода/атрибутам - изменений не будет)
-                if (str_starts_with($method->getName(), 'on') && $method->getNumberOfParameters() === 1) {
-                    $param = $method->getParameters()[0];
-
-                    if ($param->getType() && $param->getType()->getName() === $eventClass) {
-                        $callable = [$listener, $method->getName()];
-                        if (is_callable($callable)) {
-                            $callable($event);
-                        }
-                    }
-                }
-            }
+            ListenerMethodResolver::invoke($listener, $event);
         }
     }
 }

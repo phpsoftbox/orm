@@ -16,6 +16,7 @@ use PhpSoftBox\Orm\Metadata\RelationMetadata;
 use PhpSoftBox\Orm\Relation\Scope\RelationScopeInterface;
 use PhpSoftBox\Orm\Relation\Scope\RelationScopeQuery;
 use PhpSoftBox\Orm\Result\EntityResult;
+use PhpSoftBox\Pagination\Contracts\PaginationContextResolverInterface;
 use PhpSoftBox\Pagination\Contracts\PaginationResultInterface;
 use PhpSoftBox\Pagination\Paginator;
 
@@ -26,7 +27,11 @@ use function array_slice;
 use function array_values;
 use function count;
 use function implode;
+use function in_array;
+use function intdiv;
 use function is_string;
+use function max;
+use function min;
 use function preg_match;
 use function preg_replace;
 use function preg_split;
@@ -35,6 +40,8 @@ use function strtolower;
 use function strtoupper;
 use function strtr;
 use function trim;
+
+use const PHP_INT_MAX;
 
 /**
  * @template TEntity of EntityInterface
@@ -305,6 +312,8 @@ final class OrmSelectQueryBuilder
     /**
      * Включает eager loading связей.
      *
+     * Повторные вызовы накапливают связи: `with('a')->with('b')` загрузит и `a`, и `b`.
+     *
      * @param list<string>|string $relations
      */
     public function with(array|string $relations): self
@@ -313,7 +322,37 @@ final class OrmSelectQueryBuilder
             $relations = [$relations];
         }
 
-        $this->withRelations = array_values(array_filter($relations, static fn (string $value): bool => $value !== ''));
+        foreach ($relations as $relation) {
+            $relation = trim($relation);
+            if ($relation === '' || in_array($relation, $this->withRelations, true)) {
+                continue;
+            }
+
+            $this->withRelations[] = $relation;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Задаёт Paginator, которым формируются результаты `paginate*()`.
+     *
+     * Через него передаются path, query-параметры, fragment, окно ссылок и имя параметра страницы.
+     */
+    public function usePaginator(Paginator $paginator): self
+    {
+        $this->paginator = $paginator;
+
+        return $this;
+    }
+
+    /**
+     * Задаёт контекст пагинации (обычно RequestPaginationContextResolver): номер страницы, perPage,
+     * path и query-параметры текущего запроса попадают в результат и ссылки.
+     */
+    public function paginationContext(PaginationContextResolverInterface $resolver): self
+    {
+        $this->paginator = $this->paginator->resolver($resolver);
 
         return $this;
     }
@@ -652,9 +691,13 @@ final class OrmSelectQueryBuilder
                 ->from($throughMeta->table . ' ' . $pivotAlias)
                 ->innerJoin(
                     $targetMeta->table . ' ' . $targetAlias,
-                    $targetAlias . '.' . $targetKey . ' = ' . $pivotAlias . '.' . $relation->secondKey,
+                    $targetAlias . '.' . $targetKey . ' = ' . $pivotAlias . '.'
+                        . $this->resolveEntityColumn($relation->throughEntity, $relation->secondKey),
                 )
-                ->where($pivotAlias . '.' . $relation->firstKey . ' = ' . $sourceRef . '.' . $localKey);
+                ->where(
+                    $pivotAlias . '.' . $this->resolveEntityColumn($relation->throughEntity, $relation->firstKey)
+                        . ' = ' . $sourceRef . '.' . $localKey,
+                );
 
             $this->applyRelationScopes($query, $relation->throughScopes, $pivotAlias);
             $this->applyTargetSoftDeleteScope($query, $relation->throughEntity, $pivotAlias);
@@ -833,19 +876,18 @@ final class OrmSelectQueryBuilder
         $this->ensureRootSelection();
         $this->applySoftDeleteScope();
 
-        $pagination = $this->query->paginate($page, $perPage);
-        $meta       = $pagination->meta();
+        [$rows, $total, $pageValue, $perPageValue] = $this->paginateRows($page, $perPage);
 
-        $entities = $this->hydrateRows($pagination->data());
+        $entities = $this->hydrateRows($rows);
         if ($this->withRelations !== []) {
             $this->entityManager->load($entities, $this->withRelations);
         }
 
         return $this->paginator->make(
             items: $entities->all(),
-            total: (int) ($meta['total'] ?? 0),
-            page: (int) ($meta['current_page'] ?? 1),
-            perPage: (int) ($meta['per_page'] ?? 1),
+            total: $total,
+            page: $pageValue,
+            perPage: $perPageValue,
         );
     }
 
@@ -854,9 +896,7 @@ final class OrmSelectQueryBuilder
         $this->ensureRootSelection();
         $this->applySoftDeleteScope();
 
-        $pagination = $this->query->paginate($page, $perPage);
-        $meta       = $pagination->meta();
-        $rows       = $pagination->data();
+        [$rows, $total, $pageValue, $perPageValue] = $this->paginateRows($page, $perPage);
 
         $entities = $this->hydrateRows($rows);
         if ($this->withRelations !== []) {
@@ -865,9 +905,9 @@ final class OrmSelectQueryBuilder
 
         return $this->paginator->make(
             items: $this->makeEntityResults($entities->all(), $rows),
-            total: (int) ($meta['total'] ?? 0),
-            page: (int) ($meta['current_page'] ?? 1),
-            perPage: (int) ($meta['per_page'] ?? 1),
+            total: $total,
+            page: $pageValue,
+            perPage: $perPageValue,
         );
     }
 
@@ -945,7 +985,40 @@ final class OrmSelectQueryBuilder
     {
         $this->applySoftDeleteScope();
 
-        return $this->query->paginate($page, $perPage);
+        [$rows, $total, $pageValue, $perPageValue] = $this->paginateRows($page, $perPage);
+
+        return $this->paginator->make(
+            items: $rows,
+            total: $total,
+            page: $pageValue,
+            perPage: $perPageValue,
+        );
+    }
+
+    /**
+     * Выбирает строки страницы. Номер страницы и perPage: явные аргументы, затем контекст пагинации,
+     * затем значения Paginator по умолчанию.
+     *
+     * @return array{0: list<array<string, mixed>>, 1: int, 2: int, 3: int}
+     */
+    private function paginateRows(?int $page, ?int $perPage): array
+    {
+        $resolver = $this->paginator->contextResolver();
+
+        $pageValue    = max(1, $page ?? $resolver?->page() ?? 1);
+        $perPageValue = max(1, $perPage ?? $resolver?->perPage() ?? $this->paginator->perPage());
+
+        // Смещение (page - 1) * perPage должно помещаться в int.
+        $pageValue = min($pageValue, intdiv(PHP_INT_MAX, $perPageValue));
+
+        $total = $this->query->count();
+
+        $rows = (clone $this->query)
+            ->limit($perPageValue)
+            ->offset(($pageValue - 1) * $perPageValue)
+            ->fetchAll();
+
+        return [$rows, $total, $pageValue, $perPageValue];
     }
 
     /**
@@ -1037,7 +1110,10 @@ final class OrmSelectQueryBuilder
 
             $subquery
                 ->from($targetTable . ' ' . $relatedAlias)
-                ->where($relatedAlias . '.' . $relationMeta->foreignKey . ' = ' . $this->rootColumnRef($relationMeta->localKey));
+                ->where(
+                    $relatedAlias . '.' . $this->resolveEntityColumn($relationMeta->targetEntity, $relationMeta->foreignKey)
+                        . ' = ' . $this->rootColumnRef($relationMeta->localKey),
+                );
 
             $this->applyTargetSoftDeleteScope($subquery, $relationMeta->targetEntity, $relatedAlias);
             $this->applyRelationScopes($subquery, $relationMeta->relationScopes, $relatedAlias);
@@ -1095,9 +1171,13 @@ final class OrmSelectQueryBuilder
                 ->from($throughTable . ' ' . $pivotAlias)
                 ->innerJoin(
                     $targetTable . ' ' . $relatedAlias,
-                    $relatedAlias . '.' . $targetKey . ' = ' . $pivotAlias . '.' . $relationMeta->secondKey,
+                    $relatedAlias . '.' . $targetKey . ' = ' . $pivotAlias . '.'
+                        . $this->resolveEntityColumn($relationMeta->throughEntity, $relationMeta->secondKey),
                 )
-                ->where($pivotAlias . '.' . $relationMeta->firstKey . ' = ' . $this->rootColumnRef($relationMeta->localKey));
+                ->where(
+                    $pivotAlias . '.' . $this->resolveEntityColumn($relationMeta->throughEntity, $relationMeta->firstKey)
+                        . ' = ' . $this->rootColumnRef($relationMeta->localKey),
+                );
 
             $this->applyRelationScopes($subquery, $relationMeta->throughScopes, $pivotAlias);
             $this->applyTargetSoftDeleteScope($subquery, $relationMeta->targetEntity, $relatedAlias);
@@ -1115,9 +1195,13 @@ final class OrmSelectQueryBuilder
 
             $subquery
                 ->from($targetTable . ' ' . $relatedAlias)
-                ->where($relatedAlias . '.' . $relationMeta->morphIdColumn . ' = ' . $this->rootColumnRef($relationMeta->localKey))
                 ->where(
-                    $relatedAlias . '.' . $relationMeta->morphTypeColumn . ' = :' . $typeParam,
+                    $relatedAlias . '.' . $this->resolveEntityColumn($relationMeta->targetEntity, $relationMeta->morphIdColumn)
+                        . ' = ' . $this->rootColumnRef($relationMeta->localKey),
+                )
+                ->where(
+                    $relatedAlias . '.' . $this->resolveEntityColumn($relationMeta->targetEntity, $relationMeta->morphTypeColumn)
+                        . ' = :' . $typeParam,
                     [$typeParam => $relationMeta->morphTypeValue],
                 );
 

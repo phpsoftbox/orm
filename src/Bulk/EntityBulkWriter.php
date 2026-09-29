@@ -15,10 +15,12 @@ use PhpSoftBox\Orm\Behavior\EventDispatcherInterface;
 use PhpSoftBox\Orm\Behavior\TimestampColumnsResolver;
 use PhpSoftBox\Orm\Contracts\EntityManagerInterface;
 use PhpSoftBox\Orm\Contracts\UnitOfWorkInterface;
+use PhpSoftBox\Orm\EntityManager;
 use PhpSoftBox\Orm\Exception\CompositePrimaryKeyNotSupportedException;
 use PhpSoftBox\Orm\Metadata\ClassMetadata;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
 use PhpSoftBox\Orm\Metadata\PropertyMetadata;
+use PhpSoftBox\Orm\Repository\AutoEntityMapper;
 use Ramsey\Uuid\UuidInterface;
 
 use function array_chunk;
@@ -48,6 +50,7 @@ final readonly class EntityBulkWriter
         private ?LookupSpec $lookup = null,
         private int $chunkSize = self::DEFAULT_CHUNK_SIZE,
         private TimestampColumnsResolver $timestamps = new TimestampColumnsResolver(),
+        private ?AutoEntityMapper $mapper = null,
     ) {
         if ($this->chunkSize < 1) {
             throw new InvalidArgumentException('Bulk chunk size must be greater than zero.');
@@ -66,6 +69,7 @@ final readonly class EntityBulkWriter
             $lookup,
             $this->chunkSize,
             $this->timestamps,
+            $this->mapper,
         );
     }
 
@@ -95,6 +99,7 @@ final readonly class EntityBulkWriter
             $this->lookup,
             $chunkSize,
             $this->timestamps,
+            $this->mapper,
         );
     }
 
@@ -197,36 +202,46 @@ final readonly class EntityBulkWriter
 
         $this->assertNoScheduledOperations();
 
-        /** @var AbstractBulkWriteCommand $onEvent */
-        $onEvent = new $onEventClass($this->orm, $this->entityClass, $lookup, $action, $state);
+        // Все чанки и обработчики событий выполняются в одной транзакции: ошибка на любом чанке откатывает
+        // уже применённые. Если транзакция уже открыта снаружи, используется вложенная (savepoint).
+        $result = $this->connection->transaction(
+            function () use ($meta, $action, $state, $lookup, $values, $onEventClass, $afterEventClass): BulkWriteResult {
+                /** @var AbstractBulkWriteCommand $onEvent */
+                $onEvent = new $onEventClass($this->orm, $this->entityClass, $lookup, $action, $state);
 
-        $this->events->dispatch($onEvent);
-        $this->normalizeActionState($meta, $action, $state);
+                $this->events->dispatch($onEvent);
+                $this->normalizeActionState($meta, $action, $state);
 
-        $affectedRows = 0;
-        foreach ($this->chunkLookup($lookup) as $chunk) {
-            $affectedRows += match ($action) {
-                BulkWriteAction::Update => $this->executeUpdate($meta, $chunk, $state->getData()),
-                BulkWriteAction::Remove => $meta->softDelete !== null
-                    ? $this->executeUpdate($meta, $chunk, $state->getData())
-                    : $this->executeDelete($meta, $chunk),
-                BulkWriteAction::ForceRemove => $this->executeDelete($meta, $chunk),
-                BulkWriteAction::Restore     => $this->executeUpdate($meta, $chunk, $state->getData()),
-            };
-        }
+                $data = $this->castForWrite($meta, $state->getData());
 
-        $result = new BulkWriteResult(
-            entityClass: $this->entityClass,
-            action: $action,
-            requestedValues: count($values),
-            affectedRows: $affectedRows,
-            lookupValues: $values,
+                $affectedRows = 0;
+                foreach ($this->chunkLookup($lookup) as $chunk) {
+                    $affectedRows += match ($action) {
+                        BulkWriteAction::Update => $this->executeUpdate($meta, $chunk, $data),
+                        BulkWriteAction::Remove => $meta->softDelete !== null
+                            ? $this->executeUpdate($meta, $chunk, $data)
+                            : $this->executeDelete($meta, $chunk),
+                        BulkWriteAction::ForceRemove => $this->executeDelete($meta, $chunk),
+                        BulkWriteAction::Restore     => $this->executeUpdate($meta, $chunk, $data),
+                    };
+                }
+
+                $result = new BulkWriteResult(
+                    entityClass: $this->entityClass,
+                    action: $action,
+                    requestedValues: count($values),
+                    affectedRows: $affectedRows,
+                    lookupValues: $values,
+                );
+
+                /** @var AbstractAfterBulkWriteCommand $afterEvent */
+                $afterEvent = new $afterEventClass($this->orm, $this->entityClass, $lookup, $action, $state, $result);
+
+                $this->events->dispatch($afterEvent);
+
+                return $result;
+            },
         );
-
-        /** @var AbstractAfterBulkWriteCommand $afterEvent */
-        $afterEvent = new $afterEventClass($this->orm, $this->entityClass, $lookup, $action, $state, $result);
-
-        $this->events->dispatch($afterEvent);
 
         $this->unitOfWork->clear();
 
@@ -264,6 +279,41 @@ final readonly class EntityBulkWriter
         $this->applyLookupCriteria($query, $lookup);
 
         return $query->execute();
+    }
+
+    /**
+     * Приводит значения bulk update к формату БД так же, как при записи сущности (DataCasting по `#[Column]`).
+     *
+     * Значения задаются PHP-типами свойств сущности (enum, DateTimeInterface, массив для JSON, money и т.д.).
+     * Колонки, которых нет в метаданных, и колонка soft delete уходят как есть.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function castForWrite(ClassMetadata $meta, array $data): array
+    {
+        $mapper = $this->mapper ?? ($this->orm instanceof EntityManager ? $this->orm->mapper() : null);
+        if ($mapper === null) {
+            return $data;
+        }
+
+        $byColumn = [];
+        foreach ($meta->columns as $column) {
+            $byColumn[$column->column] = $column;
+        }
+
+        foreach ($data as $column => $value) {
+            // Значение колонки soft delete формирует сама ORM.
+            if ($column === $meta->softDelete?->column) {
+                continue;
+            }
+
+            if (isset($byColumn[$column])) {
+                $data[$column] = $mapper->castToMetadata($byColumn[$column], $value);
+            }
+        }
+
+        return $data;
     }
 
     private function executeDelete(ClassMetadata $meta, LookupSpec $lookup): int

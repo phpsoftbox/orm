@@ -23,6 +23,25 @@
   - `connectionNameForEntity(string $entityClass): ?string`
   - `forEntity(string $entityClass, bool $write = true): EntityManagerInterface`
 
+`ConnectionEntityManagerRegistry` создаёт managers через `ConnectionEntityManagerFactory`. Оба принимают те же
+опции, что и `new EntityManager(...)`, и передают их без изменений, поэтому manager из registry ведёт себя так же,
+как созданный вручную:
+
+| Опция | Назначение |
+|---|---|
+| `metadata` | провайдер метаданных; по умолчанию `AttributeMetadataProvider` с naming convention из `config` (один на все managers) |
+| `mapper` | `AutoEntityMapper` (DataCasting) |
+| `events` | глобальный dispatcher событий ORM; можно разделять между managers |
+| `listenerResolver` | создание `#[EventListener]` сущностей (например, `ContainerListenerResolver`) |
+| `config` | `EntityManagerConfig`: built-in listeners, inflector, naming convention, генератор UUID |
+| `changeLogger`, `changeContextResolver`, `changelogIgnoredFields` | changelog |
+| `relationScopeResolver` | резолв relation scopes |
+| `runtimeRegistry` | общий weak registry runtime-state entity |
+
+> Если передаёте свой `metadata`, создавайте его с naming convention
+> (`new AttributeMetadataProvider(namingConvention: $config->namingConvention)`), иначе сущности без явного
+> `#[Entity(table: ...)]` работать не будут. Проще не передавать `metadata` и задать `config`.
+
 Маршрутизация entity и создание manager разделены намеренно. Обёртки registry, которым нужен собственный кеш
 (например tenant-aware registry), получают имя connection через `connectionNameForEntity()`, а manager берут через
 свой `forConnection()`. Это не даёт route binding создать второй `UnitOfWork` для той же entity.
@@ -31,11 +50,12 @@
 
 ```php
 use PhpSoftBox\Database\Connection\ConnectionManagerInterface;
+use PhpSoftBox\Orm\Behavior\ContainerListenerResolver;
 use PhpSoftBox\Orm\ConnectionEntityManagerRegistry;
 use PhpSoftBox\Orm\Contracts\EntityManagerInterface;
 use PhpSoftBox\Orm\Contracts\EntityManagerRegistryInterface;
 use PhpSoftBox\Orm\Contracts\EntityRuntimeRegistryInterface;
-use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
+use PhpSoftBox\Orm\EntityManagerConfig;
 use PhpSoftBox\Orm\Repository\AutoEntityMapper;
 use PhpSoftBox\Orm\UnitOfWork\EntityRuntimeRegistry;
 use Psr\Container\ContainerInterface;
@@ -51,10 +71,11 @@ return [
         static function (ContainerInterface $container): EntityManagerRegistryInterface {
             return new ConnectionEntityManagerRegistry(
                 connections: $container->get(ConnectionManagerInterface::class),
-                metadata: new AttributeMetadataProvider(),
                 mapper: $container->get(AutoEntityMapper::class),
                 defaultConnectionName: 'default',
                 runtimeRegistry: $container->get(EntityRuntimeRegistryInterface::class),
+                listenerResolver: new ContainerListenerResolver($container),
+                config: new EntityManagerConfig(),
             );
         },
     ),

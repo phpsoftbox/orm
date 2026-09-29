@@ -9,9 +9,11 @@ use PhpSoftBox\Inflector\InflectorFactory;
 use PhpSoftBox\Inflector\LanguageEnum;
 use PhpSoftBox\Orm\Behavior\BuiltInListenersRegistry;
 use PhpSoftBox\Orm\Contracts\BuiltInListenersRegistryInterface;
+use PhpSoftBox\Orm\Contracts\UuidGeneratorInterface;
 use PhpSoftBox\Orm\Metadata\Conventions\InflectorNamingConvention;
 use PhpSoftBox\Orm\Metadata\Conventions\NamingConventionInterface;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
+use PhpSoftBox\Orm\Uuid\RamseyUuidGenerator;
 
 /**
  * Конфигурация EntityManager.
@@ -41,10 +43,18 @@ final class EntityManagerConfig
          * Если null — будет создан InflectorNamingConvention на основе $inflector.
          */
         public ?NamingConventionInterface $namingConvention = null,
+        /**
+         * Генератор UUID для первичных ключей с `#[GeneratedValue(strategy: 'uuid')]`.
+         *
+         * Если null — используется RamseyUuidGenerator (UUIDv7).
+         */
+        public ?UuidGeneratorInterface $uuidGenerator = null,
     ) {
         $this->inflector ??= InflectorFactory::create(LanguageEnum::EN);
 
         $this->namingConvention ??= new InflectorNamingConvention($this->inflector);
+
+        $this->uuidGenerator ??= new RamseyUuidGenerator();
     }
 
     public function resolveBuiltInRegistry(

@@ -110,6 +110,16 @@ $userA->name = 'John';
 assert($userB->name === 'John');
 ```
 
+### flush() и UPDATE только изменённых колонок
+
+Для managed-сущности (загруженной через ORM) `flush()` сравнивает текущее состояние со snapshot и отправляет
+в `UPDATE` только изменённые колонки, а также колонки, которые добавили или изменили слушатели `OnUpdate`
+(например, `updated_datetime`). Параллельные правки разных полей одной записи в разных процессах не затирают
+друг друга, а значения, которые не менялись, не переписываются.
+
+Если snapshot нет (сущность не загружалась через ORM, а `persist()` определил её как существующую), в `UPDATE`
+уходят все колонки. Если изменились только необновляемые колонки (`updatable: false`), запрос не выполняется.
+
 #### Чем отличается от $em->repository()->find()
 
 `$em->repository(User::class)->find($id)` всегда вызывает репозиторий.
@@ -143,7 +153,8 @@ $qb->onlyDeleted();
 
 ### Eager loading через with()
 
-`with()` задаёт связи, которые будут автоматически подгружены при `fetchEntities()` или `paginateEntities()`:
+`with()` задаёт связи, которые будут автоматически подгружены при `fetchEntities()` или `paginateEntities()`.
+Повторные вызовы накапливают связи: `->with('roles')->with('profile')` загрузит обе.
 
 ```php
 $users = $em
@@ -165,6 +176,38 @@ $pagination = $em
 Важно: `fetchAll()` и `paginate()` по-прежнему возвращают массивы строк (как обычный QueryBuilder).
 Если нужны сущности, используйте `fetchEntities()` / `paginateEntities()`.
 
+### Пагинация и ссылки
+
+`paginate()`, `paginateEntities()` и `paginateEntityResults()` формируют результат через `Paginator`
+из `phpsoftbox/pagination`. Чтобы ссылки сохраняли path и query-параметры текущего запроса, передайте контекст
+пагинации:
+
+```php
+use PhpSoftBox\Pagination\RequestPaginationContextResolver;
+
+$pagination = $em
+    ->queryFor(User::class)
+    ->paginationContext(new RequestPaginationContextResolver($request, perPageParam: 'per_page'))
+    ->paginateEntities();
+```
+
+Номер страницы и `perPage` берутся из аргументов `paginate*()`, если они переданы, иначе из контекста, иначе
+используются значения `Paginator` по умолчанию (страница 1, 15 на страницу).
+
+Для полной настройки (path, дополнительные query-параметры, fragment, окно ссылок, имя параметра страницы)
+передайте готовый `Paginator`:
+
+```php
+use PhpSoftBox\Pagination\Paginator;
+
+$pagination = $em
+    ->queryFor(User::class)
+    ->usePaginator(new Paginator(perPage: 20)->path('/admin/users')->appends(['status' => 'active']))
+    ->paginateEntities($page);
+```
+
+Без контекста и Paginator ссылки строятся без path и query (как у голого `new Paginator()`).
+
 ## EntityManager::bulk
 
 `EntityManager::bulk()` возвращает set-based writer для массовых операций без загрузки сущностей.
@@ -175,6 +218,9 @@ $pagination = $em
 - не строит per-entity changelog, потому что сущности не загружаются
 - после успешной операции очищает UnitOfWork, чтобы уже загруженные объекты не остались stale
 - не запускается, если в UnitOfWork уже есть запланированные операции; сначала вызовите `flush()`
+- выполняется в транзакции: события `OnBulk*`/`AfterBulk*` и все чанки либо применяются целиком, либо
+  откатываются; если транзакция уже открыта снаружи, используется вложенная (savepoint) и внешний откат
+  отменяет bulk-изменения
 
 Пример soft delete по id:
 
@@ -237,6 +283,20 @@ $em
 updatable-колонка `updatedDatetime` / `updated_datetime`, bulk update выставит её тем же
 механизмом, что и обычный `TimestampsListener`.
 
+Значения `update()` (и колонки, добавленные слушателями `OnBulk*`) приводятся к формату БД через DataCasting
+по `#[Column]`, так же как при записи сущности. Поэтому передавайте PHP-значения того же типа, что и свойство
+сущности: backed enum, `DateTimeInterface`, массив/объект для JSON, `bool`, значение money и т.д.
+Колонки, которых нет в метаданных, передаются как есть.
+
+```php
+$em->bulk(Product::class)->ids($ids)->update([
+    'status'      => ProductStatus::Archived,
+    'isActive'    => false,
+    'archivedAt'  => new DateTimeImmutable(),
+    'attributes'  => ['reason' => 'cleanup'],
+]);
+```
+
 Результат операции:
 
 ```php
@@ -254,6 +314,9 @@ $result->lookupValues;    // уникальные lookup values
 
 События содержат `entityClass`, `LookupSpec`, `BulkWriteAction`, `MutableBulkWriteState`.
 `After*` дополнительно содержит `BulkWriteResult`.
+
+Bulk-события получают глобальный dispatcher (`events`) и `#[EventListener]` сущности, для которой выполняется
+операция.
 
 ## Авто-резолв репозитория
 

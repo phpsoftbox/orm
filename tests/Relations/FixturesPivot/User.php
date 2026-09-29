@@ -31,7 +31,6 @@ final class User implements EntityInterface
         foreignPivotKey: 'user_id',
         relatedPivotKey: 'role_id',
         pivotEntity: UserRole::class,
-        pivotAccessor: 'pivot',
     )]
     public EntityCollection $roles;
 

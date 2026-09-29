@@ -9,6 +9,7 @@ use PhpSoftBox\Database\Contracts\ConnectionInterface;
 use PhpSoftBox\Database\QueryBuilder\SelectQueryBuilder;
 use PhpSoftBox\DataCasting\DefaultTypeCasterFactory;
 use PhpSoftBox\DataCasting\Options\TypeCastOptionsManager;
+use PhpSoftBox\Orm\Behavior\CallbackEventDispatcher;
 use PhpSoftBox\Orm\Behavior\Command\AfterCreate;
 use PhpSoftBox\Orm\Behavior\Command\AfterDelete;
 use PhpSoftBox\Orm\Behavior\Command\AfterForceDelete;
@@ -24,6 +25,9 @@ use PhpSoftBox\Orm\Behavior\Command\OnUpdate;
 use PhpSoftBox\Orm\Behavior\DefaultEventDispatcher;
 use PhpSoftBox\Orm\Behavior\DefaultListenerResolver;
 use PhpSoftBox\Orm\Behavior\EventDispatcherInterface;
+use PhpSoftBox\Orm\Behavior\ListenerMethodResolver;
+use PhpSoftBox\Orm\Bulk\AbstractAfterBulkWriteCommand;
+use PhpSoftBox\Orm\Bulk\AbstractBulkWriteCommand;
 use PhpSoftBox\Orm\Bulk\EntityBulkWriter;
 use PhpSoftBox\Orm\ChangeLog\EntityChangeAction;
 use PhpSoftBox\Orm\ChangeLog\EntityChangeContext;
@@ -42,9 +46,12 @@ use PhpSoftBox\Orm\Contracts\RepositoryFactoryInterface;
 use PhpSoftBox\Orm\Contracts\RepositoryInterface;
 use PhpSoftBox\Orm\Contracts\SoftDeleteAwareEntityRepositoryInterface;
 use PhpSoftBox\Orm\Contracts\UnitOfWorkInterface;
+use PhpSoftBox\Orm\Contracts\UuidGeneratorInterface;
 use PhpSoftBox\Orm\Exception\EntityPersistException;
+use PhpSoftBox\Orm\Exception\OrmException;
 use PhpSoftBox\Orm\Exception\RepositoryNotRegisteredException;
 use PhpSoftBox\Orm\Metadata\AttributeMetadataProvider;
+use PhpSoftBox\Orm\Metadata\ClassMetadata;
 use PhpSoftBox\Orm\Metadata\ColumnPropertyMapperInterface;
 use PhpSoftBox\Orm\Metadata\MetadataColumnPropertyMapper;
 use PhpSoftBox\Orm\Metadata\MetadataProviderInterface;
@@ -54,6 +61,7 @@ use PhpSoftBox\Orm\Persistence\EntityPersisterInterface;
 use PhpSoftBox\Orm\QueryBuilder\OrmSelectQueryBuilder;
 use PhpSoftBox\Orm\Relation\PivotRelationManager;
 use PhpSoftBox\Orm\Relation\PivotRelationWriter;
+use PhpSoftBox\Orm\Relation\RelationKeyResolver;
 use PhpSoftBox\Orm\Relation\Scope\DefaultRelationScopeResolver;
 use PhpSoftBox\Orm\Relation\Scope\RelationScopeInterface;
 use PhpSoftBox\Orm\Relation\Scope\RelationScopeQuery;
@@ -63,18 +71,29 @@ use PhpSoftBox\Orm\Repository\AutoEntityMapper;
 use PhpSoftBox\Orm\Repository\DefaultRepositoryResolver;
 use PhpSoftBox\Orm\Repository\GenericEntityRepository;
 use PhpSoftBox\Orm\Repository\RepositoryClassFactory;
+use PhpSoftBox\Orm\Support\PropertyAccessor;
 use PhpSoftBox\Orm\UnitOfWork\EntityState;
 use PhpSoftBox\Orm\UnitOfWork\UnitOfWork;
+use PhpSoftBox\Orm\Uuid\RamseyUuidGenerator;
 use Ramsey\Uuid\UuidInterface;
+use ReflectionException;
+use ReflectionNamedType;
+use ReflectionProperty;
+use ReflectionType;
+use ReflectionUnionType;
 use Throwable;
 
 use function array_filter;
 use function array_key_exists;
+use function array_key_last;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_values;
+use function count;
 use function explode;
 use function in_array;
+use function is_a;
 use function is_array;
 use function is_callable;
 use function is_iterable;
@@ -82,12 +101,10 @@ use function is_object;
 use function is_scalar;
 use function is_string;
 use function method_exists;
-use function property_exists;
 use function sort;
 use function spl_object_id;
 use function strtolower;
 use function trim;
-use function ucfirst;
 
 final class EntityManager implements EntityManagerContextInterface
 {
@@ -112,6 +129,15 @@ final class EntityManager implements EntityManagerContextInterface
      * @var array<class-string, object>
      */
     private array $listenerInstances = [];
+
+    /**
+     * @var list<object>
+     */
+    private array $builtInListeners = [];
+
+    private readonly UuidGeneratorInterface $uuidGenerator;
+
+    private readonly RelationKeyResolver $relationKeys;
 
     private readonly ListenerResolverInterface $listenerResolver;
 
@@ -165,13 +191,16 @@ final class EntityManager implements EntityManagerContextInterface
 
         $this->events = $events ?? new DefaultEventDispatcher();
 
-        // Встроенные listeners/behaviors (опционально)
-        if ($config->enableBuiltInListeners && $this->events instanceof DefaultEventDispatcher) {
-            $registry = $config->resolveBuiltInRegistry($this->metadata);
-            foreach ($registry->listeners() as $listener) {
-                $this->events->registerListenerObject($listener);
+        // Встроенные listeners/behaviors (опционально). Хранятся отдельно и не регистрируются в переданном
+        // dispatcher: один dispatcher можно безопасно разделять между несколькими EntityManager.
+        if ($config->enableBuiltInListeners) {
+            foreach ($config->resolveBuiltInRegistry($this->metadata)->listeners() as $listener) {
+                $this->builtInListeners[] = $listener;
             }
         }
+
+        $this->uuidGenerator = $config->uuidGenerator ?? new RamseyUuidGenerator();
+        $this->relationKeys  = new RelationKeyResolver($this->metadata);
 
         $this->listenerResolver       = $listenerResolver ?? new DefaultListenerResolver();
         $this->changeLogger           = $changeLogger ?? new NullEntityChangeLogger();
@@ -294,8 +323,9 @@ final class EntityManager implements EntityManagerContextInterface
             connection: $this->connection,
             metadata: $this->metadata,
             unitOfWork: $this->unitOfWork,
-            events: $this->events,
+            events: new CallbackEventDispatcher($this->dispatchBulk(...)),
             entityClass: $entityClass,
+            mapper: $this->mapper,
         );
     }
 
@@ -373,6 +403,8 @@ final class EntityManager implements EntityManagerContextInterface
 
             // 1) INSERT
             foreach ($this->unitOfWork->scheduledInserts() as $entity) {
+                $this->assignGeneratedUuid($entity);
+
                 $state = $this->makeState($entity);
 
                 $this->dispatch($entity, new OnCreate($this, $entity, $state));
@@ -434,12 +466,13 @@ final class EntityManager implements EntityManagerContextInterface
                     continue;
                 }
 
-                $before = $this->snapshotOrExtract($entity);
-                $state  = $this->makeState($entity);
+                $before   = $this->snapshotOrExtract($entity);
+                $state    = $this->makeState($entity);
+                $original = $state->getData();
 
                 $this->dispatch($entity, new OnUpdate($this, $entity, $state));
                 $this->assertRequiredState($entity, $state, 'update');
-                $this->persister->update($entity, $state->getData());
+                $this->persister->update($entity, $this->updateChanges($entity, $original, $state->getData()));
                 $this->dispatch($entity, new AfterUpdate($this, $entity, $state));
 
                 $changeRecords[] = $this->buildChangeRecord(
@@ -660,6 +693,53 @@ final class EntityManager implements EntityManagerContextInterface
     }
 
     /**
+     * Собирает уникальные значения ключа у списка сущностей.
+     *
+     * @param list<EntityInterface> $entities
+     * @return array<string, int|string|float>
+     */
+    private function collectKeyValues(array $entities, string $key): array
+    {
+        $values = [];
+        foreach ($entities as $entity) {
+            $value = $this->relationKeys->readValue($entity, $key);
+            if ($value !== null) {
+                $values[(string) $value] = $value;
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * Группирует загруженные сущности по значению ключа (колонка или свойство target-сущности).
+     *
+     * @param list<EntityInterface> $entities
+     * @return array<string, list<EntityInterface>>
+     */
+    private function groupByKey(array $entities, string $entityClass, string $key): array
+    {
+        $property = $this->relationKeys->resolve($entityClass, $key)->property;
+
+        $map = [];
+        foreach ($entities as $entity) {
+            if (!PropertyAccessor::has($entity, $property)) {
+                continue;
+            }
+
+            $value = RelationKeyResolver::normalize(PropertyAccessor::read($entity, $property));
+            if ($value === null) {
+                continue;
+            }
+
+            $map[(string) $value] ??= [];
+            $map[(string) $value][] = $entity;
+        }
+
+        return $map;
+    }
+
+    /**
      * @param list<EntityInterface> $entities
      */
     private function loadHasOne(array $entities, string $relationProperty, RelationMetadata $relation): void
@@ -668,16 +748,7 @@ final class EntityManager implements EntityManagerContextInterface
             throw new InvalidArgumentException('HasOne relation must define foreignKey');
         }
 
-        $parentIds = [];
-        foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
-            if ($id !== null && is_scalar($id)) {
-                $parentIds[(string) $id] = $id;
-            }
-        }
+        $parentIds = $this->collectKeyValues($entities, $relation->localKey);
 
         if ($parentIds === []) {
             foreach ($entities as $entity) {
@@ -690,37 +761,19 @@ final class EntityManager implements EntityManagerContextInterface
         $children = $this->findManyByColumnWithScopes(
             entityClass: $relation->targetEntity,
             ids: array_values($parentIds),
-            column: $relation->foreignKey,
+            column: $this->relationKeys->column($relation->targetEntity, $relation->foreignKey),
             scopes: $relation->relationScopes,
         );
 
-        $map = [];
-
-        $fkProperty = $this->columnPropertyMapper->columnToProperty($relation->targetEntity, $relation->foreignKey);
-
-        foreach ($children->all() as $child) {
-            $fk = $fkProperty !== null ? $this->readAnyProperty($child, $fkProperty) : null;
-
-            if (is_object($fk) && method_exists($fk, 'toString')) {
-                $fk = $fk->toString();
-            }
-            if ($fk === null || !is_scalar($fk)) {
-                continue;
-            }
-
-            $map[(string) $fk] = $child;
-        }
+        $map = $this->groupByKey($children->all(), $relation->targetEntity, $relation->foreignKey);
 
         foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
+            $id = $this->relationKeys->readValue($entity, $relation->localKey);
 
             $this->writeLoadedRelation(
                 $entity,
                 $relationProperty,
-                ($id !== null && isset($map[(string) $id])) ? $map[(string) $id] : null,
+                $id !== null && isset($map[(string) $id]) ? $map[(string) $id][array_key_last($map[(string) $id])] : null,
             );
         }
     }
@@ -734,20 +787,7 @@ final class EntityManager implements EntityManagerContextInterface
             throw new InvalidArgumentException('ManyToOne relation must define joinColumn');
         }
 
-        $foreignIds = [];
-        $joins      = [];
-
-        foreach ($entities as $entity) {
-            $fk = $this->readProperty($entity, $relation->joinColumn);
-            if (is_object($fk) && method_exists($fk, 'toString')) {
-                $fk = $fk->toString();
-            }
-
-            if ($fk !== null && is_scalar($fk)) {
-                $foreignIds[(string) $fk]      = $fk;
-                $joins[spl_object_id($entity)] = (string) $fk;
-            }
-        }
+        $foreignIds = $this->collectKeyValues($entities, $relation->joinColumn);
 
         if ($foreignIds === []) {
             foreach ($entities as $entity) {
@@ -760,24 +800,20 @@ final class EntityManager implements EntityManagerContextInterface
         $targets = $this->findManyByColumnWithScopes(
             entityClass: $relation->targetEntity,
             ids: array_values($foreignIds),
-            column: $relation->referencedColumn,
+            column: $this->relationKeys->column($relation->targetEntity, $relation->referencedColumn),
             scopes: $relation->relationScopes,
         );
 
-        $map = [];
-        foreach ($targets->all() as $t) {
-            $key = $this->readProperty($t, $relation->referencedColumn);
-            if (is_object($key) && method_exists($key, 'toString')) {
-                $key = $key->toString();
-            }
-            if ($key !== null && is_scalar($key)) {
-                $map[(string) $key] = $t;
-            }
-        }
+        $map = $this->groupByKey($targets->all(), $relation->targetEntity, $relation->referencedColumn);
 
         foreach ($entities as $entity) {
-            $fkKey = $joins[spl_object_id($entity)] ?? null;
-            $this->writeLoadedRelation($entity, $relationProperty, ($fkKey !== null && isset($map[$fkKey])) ? $map[$fkKey] : null);
+            $fk = $this->relationKeys->readValue($entity, $relation->joinColumn);
+
+            $this->writeLoadedRelation(
+                $entity,
+                $relationProperty,
+                $fk !== null && isset($map[(string) $fk]) ? $map[(string) $fk][0] : null,
+            );
         }
     }
 
@@ -790,16 +826,7 @@ final class EntityManager implements EntityManagerContextInterface
             throw new InvalidArgumentException('HasMany relation must define foreignKey');
         }
 
-        $parentIds = [];
-        foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
-            if ($id !== null && is_scalar($id)) {
-                $parentIds[(string) $id] = $id;
-            }
-        }
+        $parentIds = $this->collectKeyValues($entities, $relation->localKey);
 
         if ($parentIds === []) {
             foreach ($entities as $entity) {
@@ -812,56 +839,30 @@ final class EntityManager implements EntityManagerContextInterface
         $children = $this->findManyByColumnWithScopes(
             entityClass: $relation->targetEntity,
             ids: array_values($parentIds),
-            column: $relation->foreignKey,
+            column: $this->relationKeys->column($relation->targetEntity, $relation->foreignKey),
             scopes: $relation->relationScopes,
         );
 
-        /** @var array<string, list<EntityInterface>> $map */
-        $map = [];
-
-        $fkProperty = $this->columnPropertyMapper->columnToProperty($relation->targetEntity, $relation->foreignKey);
-
-        foreach ($children->all() as $child) {
-            $fk = $fkProperty !== null ? $this->readAnyProperty($child, $fkProperty) : null;
-
-            if (is_object($fk) && method_exists($fk, 'toString')) {
-                $fk = $fk->toString();
-            }
-            if (!is_scalar($fk)) {
-                continue;
-            }
-
-            $map[(string) $fk] ??= [];
-            $map[(string) $fk][] = $child;
-        }
+        $map = $this->groupByKey($children->all(), $relation->targetEntity, $relation->foreignKey);
 
         foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
+            $id   = $this->relationKeys->readValue($entity, $relation->localKey);
+            $list = $id !== null ? $map[(string) $id] ?? [] : [];
 
-            $list = ($id !== null && isset($map[(string) $id])) ? $map[(string) $id] : [];
             $this->writeLoadedRelation($entity, $relationProperty, new EntityCollection($list));
         }
     }
 
+    /**
+     * @param list<EntityInterface> $entities
+     */
     private function loadBelongsToMany(array $entities, string $relationProperty, RelationMetadata $relation): void
     {
         if ($relation->pivotTable === null || $relation->foreignPivotKey === null || $relation->relatedPivotKey === null) {
             throw new InvalidArgumentException('BelongsToMany relation must define pivotTable, foreignPivotKey and relatedPivotKey');
         }
 
-        $parentIds = [];
-        foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->parentKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
-            if ($id !== null && is_scalar($id)) {
-                $parentIds[(string) $id] = $id;
-            }
-        }
+        $parentIds = $this->collectKeyValues($entities, $relation->parentKey);
 
         if ($parentIds === []) {
             foreach ($entities as $entity) {
@@ -886,13 +887,9 @@ final class EntityManager implements EntityManagerContextInterface
 
         $pivotRows = $pivotQuery->fetchAll();
 
-        /** @var array<string, list<int|string>> $relatedIdsByParent */
-        $relatedIdsByParent = [];
-        $allRelatedIds      = [];
-
-        // pivot map: parentId -> relatedId -> pivotRow
-        /** @var array<string, array<string, array<string, mixed>>> $pivotRowByParentAndRelated */
-        $pivotRowByParentAndRelated = [];
+        /** @var array<string, list<array{related: string, row: array<string, mixed>}>> $pivotRowsByParent */
+        $pivotRowsByParent = [];
+        $allRelatedIds     = [];
 
         foreach ($pivotRows as $row) {
             $p = $row[$relation->foreignPivotKey] ?? null;
@@ -902,77 +899,43 @@ final class EntityManager implements EntityManagerContextInterface
                 continue;
             }
 
-            $pKey = (string) $p;
-            $rKey = (string) $r;
-
-            $relatedIdsByParent[$pKey] ??= [];
-            $relatedIdsByParent[$pKey][] = $r;
-            $allRelatedIds[$rKey]        = $r;
-
-            if ($relation->pivotEntity !== null) {
-                $pivotRowByParentAndRelated[$pKey] ??= [];
-                $pivotRowByParentAndRelated[$pKey][$rKey] = $row;
-            }
+            $pivotRowsByParent[(string) $p] ??= [];
+            $pivotRowsByParent[(string) $p][] = ['related' => (string) $r, 'row' => $row];
+            $allRelatedIds[(string) $r]       = $r;
         }
 
         $relatedEntities = $this->findManyByColumnWithScopes(
             entityClass: $relation->targetEntity,
             ids: array_values($allRelatedIds),
-            column: $relation->relatedKey,
+            column: $this->relationKeys->column($relation->targetEntity, $relation->relatedKey),
             scopes: $relation->relationScopes,
         );
 
-        $relatedMap = [];
-        foreach ($relatedEntities->all() as $relEntity) {
-            $key = $this->readProperty($relEntity, $relation->relatedKey);
-            if (is_object($key) && method_exists($key, 'toString')) {
-                $key = $key->toString();
-            }
-            if ($key !== null && is_scalar($key)) {
-                $relatedMap[(string) $key] = $relEntity;
-            }
-        }
-
-        $pivotEntityClass = $relation->pivotEntity;
-        $pivotAccessor    = $relation->pivotAccessor ?: 'pivot';
-        $pivotSetter      = 'set' . ucfirst($pivotAccessor);
+        $relatedMap = $this->groupByKey($relatedEntities->all(), $relation->targetEntity, $relation->relatedKey);
 
         foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->parentKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
+            $parentKey = $this->relationKeys->readValue($entity, $relation->parentKey);
 
-            $list      = [];
-            $parentKey = $id !== null ? (string) $id : null;
+            $list = [];
 
-            if ($parentKey !== null && isset($relatedIdsByParent[$parentKey])) {
-                foreach ($relatedIdsByParent[$parentKey] as $rid) {
-                    $ridKey = (string) $rid;
-                    if (!isset($relatedMap[$ridKey])) {
-                        continue;
-                    }
+            // Pivot хранится в коллекции связи конкретного owner, а не в related-сущности:
+            // одна и та же managed-сущность может входить в связи разных owner с разными pivot.
+            $pivots = [];
 
-                    $relEntity = $relatedMap[$ridKey];
+            foreach ($parentKey !== null ? $pivotRowsByParent[(string) $parentKey] ?? [] : [] as $pivotRow) {
+                $relEntity = $relatedMap[$pivotRow['related']][0] ?? null;
+                if ($relEntity === null) {
+                    continue;
+                }
 
-                    if ($pivotEntityClass !== null && isset($pivotRowByParentAndRelated[$parentKey][$ridKey])) {
-                        $pivotRow = $pivotRowByParentAndRelated[$parentKey][$ridKey];
-                        $pivot    = $this->mapper->hydrate($pivotEntityClass, $pivotRow);
+                $list[] = $relEntity;
 
-                        // Устанавливаем pivot в target entity, если есть нужный setter.
-                        if (method_exists($relEntity, $pivotSetter)) {
-                            $relEntity->{$pivotSetter}($pivot);
-                        } elseif ($pivotAccessor === 'pivot' && method_exists($relEntity, 'setPivot')) {
-                            // совместимость/фолбэк
-                            $relEntity->setPivot($pivot);
-                        }
-                    }
-
-                    $list[] = $relEntity;
+                if ($relation->pivotEntity !== null) {
+                    $pivots[spl_object_id($relEntity)] = $this->mapper->hydrate($relation->pivotEntity, $pivotRow['row']);
                 }
             }
 
-            $this->writeLoadedRelation($entity, $relationProperty, new EntityCollection($list));
+            $this->writeLoadedRelation($entity, $relationProperty, new EntityCollection($list, $pivots));
         }
     }
 
@@ -985,16 +948,7 @@ final class EntityManager implements EntityManagerContextInterface
             throw new InvalidArgumentException('HasManyThrough relation must define throughEntity, firstKey and secondKey');
         }
 
-        $parentIds = [];
-        foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
-            if ($id !== null && is_scalar($id)) {
-                $parentIds[(string) $id] = $id;
-            }
-        }
+        $parentIds = $this->collectKeyValues($entities, $relation->localKey);
 
         if ($parentIds === []) {
             foreach ($entities as $entity) {
@@ -1005,12 +959,14 @@ final class EntityManager implements EntityManagerContextInterface
         }
 
         $throughMeta = $this->metadata->for($relation->throughEntity);
+        $firstKey    = $this->relationKeys->column($relation->throughEntity, $relation->firstKey);
+        $secondKey   = $this->relationKeys->column($relation->throughEntity, $relation->secondKey);
 
         $throughQuery = $this->connection
             ->query()
-            ->select([$relation->firstKey, $relation->secondKey])
+            ->select([$firstKey, $secondKey])
             ->from($throughMeta->table)
-            ->whereIn($relation->firstKey, array_values($parentIds));
+            ->whereIn($firstKey, array_values($parentIds));
 
         $this->applyRelationScopes($throughQuery, $relation->throughScopes);
 
@@ -1021,8 +977,8 @@ final class EntityManager implements EntityManagerContextInterface
         $allTargetIds      = [];
 
         foreach ($throughRows as $row) {
-            $p = $row[$relation->firstKey] ?? null;
-            $t = $row[$relation->secondKey] ?? null;
+            $p = $row[$firstKey] ?? null;
+            $t = $row[$secondKey] ?? null;
 
             if (!is_scalar($p) || !is_scalar($t)) {
                 continue;
@@ -1037,34 +993,19 @@ final class EntityManager implements EntityManagerContextInterface
         $targetEntities = $this->findManyByColumnWithScopes(
             entityClass: $relation->targetEntity,
             ids: array_values($allTargetIds),
-            column: $relation->targetKey,
+            column: $this->relationKeys->column($relation->targetEntity, $relation->targetKey),
             scopes: $relation->relationScopes,
         );
 
-        $targetMap = [];
-        foreach ($targetEntities->all() as $target) {
-            $key = $this->readProperty($target, $relation->targetKey);
-            if (is_object($key) && method_exists($key, 'toString')) {
-                $key = $key->toString();
-            }
-            if ($key !== null && is_scalar($key)) {
-                $targetMap[(string) $key] = $target;
-            }
-        }
+        $targetMap = $this->groupByKey($targetEntities->all(), $relation->targetEntity, $relation->targetKey);
 
         foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
+            $id = $this->relationKeys->readValue($entity, $relation->localKey);
 
             $list = [];
-            if ($id !== null && isset($targetIdsByParent[(string) $id])) {
-                foreach ($targetIdsByParent[(string) $id] as $tid) {
-                    $tidKey = (string) $tid;
-                    if (isset($targetMap[$tidKey])) {
-                        $list[] = $targetMap[$tidKey];
-                    }
+            foreach ($id !== null ? $targetIdsByParent[(string) $id] ?? [] : [] as $tid) {
+                foreach ($targetMap[(string) $tid] ?? [] as $target) {
+                    $list[] = $target;
                 }
             }
 
@@ -1093,8 +1034,8 @@ final class EntityManager implements EntityManagerContextInterface
         foreach ($entities as $entity) {
             $row = $this->mapper->extract($entity);
 
-            $type = $row[$relation->morphTypeColumn] ?? null;
-            $id   = $row[$relation->morphIdColumn] ?? null;
+            $type = $row[$this->relationKeys->column($entity::class, $relation->morphTypeColumn)] ?? null;
+            $id   = $row[$this->relationKeys->column($entity::class, $relation->morphIdColumn)] ?? null;
 
             if (!is_string($type) || $type === '' || $id === null || !is_scalar($id)) {
                 $this->writeLoadedRelation($entity, $relationProperty, null);
@@ -1174,16 +1115,7 @@ final class EntityManager implements EntityManagerContextInterface
             throw new InvalidArgumentException('MorphMany relation must define typeColumn, idColumn and typeValue');
         }
 
-        $parentIds = [];
-        foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
-            if ($id !== null && is_scalar($id)) {
-                $parentIds[(string) $id] = $id;
-            }
-        }
+        $parentIds = $this->collectKeyValues($entities, $relation->localKey);
 
         if ($parentIds === []) {
             foreach ($entities as $entity) {
@@ -1202,10 +1134,13 @@ final class EntityManager implements EntityManagerContextInterface
             ->select(['*'])
             ->from($targetMeta->table)
             ->where(
-                $relation->morphTypeColumn . ' = :__psb_morph_type',
+                $this->relationKeys->column($relation->targetEntity, $relation->morphTypeColumn) . ' = :__psb_morph_type',
                 ['__psb_morph_type' => $relation->morphTypeValue],
             )
-            ->whereIn($relation->morphIdColumn, array_values($parentIds));
+            ->whereIn(
+                $this->relationKeys->column($relation->targetEntity, $relation->morphIdColumn),
+                array_values($parentIds),
+            );
 
         $this->applyRelationScopes($query, $relation->relationScopes);
 
@@ -1213,32 +1148,12 @@ final class EntityManager implements EntityManagerContextInterface
 
         $children = $this->manageHydratedEntities($targetRepo->hydrateManyRows($rows));
 
-        /** @var array<string, list<EntityInterface>> $map */
-        $map = [];
-
-        $fkProperty = $this->columnPropertyMapper->columnToProperty($relation->targetEntity, $relation->morphIdColumn);
-
-        foreach ($children->all() as $child) {
-            $fk = $fkProperty !== null ? $this->readAnyProperty($child, $fkProperty) : null;
-
-            if (is_object($fk) && method_exists($fk, 'toString')) {
-                $fk = $fk->toString();
-            }
-            if (!is_scalar($fk)) {
-                continue;
-            }
-
-            $map[(string) $fk] ??= [];
-            $map[(string) $fk][] = $child;
-        }
+        $map = $this->groupByKey($children->all(), $relation->targetEntity, $relation->morphIdColumn);
 
         foreach ($entities as $entity) {
-            $id = $this->readProperty($entity, $relation->localKey);
-            if (is_object($id) && method_exists($id, 'toString')) {
-                $id = $id->toString();
-            }
+            $id   = $this->relationKeys->readValue($entity, $relation->localKey);
+            $list = $id !== null ? $map[(string) $id] ?? [] : [];
 
-            $list = ($id !== null && isset($map[(string) $id])) ? $map[(string) $id] : [];
             $this->writeLoadedRelation($entity, $relationProperty, new EntityCollection($list));
         }
     }
@@ -1484,25 +1399,12 @@ final class EntityManager implements EntityManagerContextInterface
 
     private function readProperty(object $obj, string $property): mixed
     {
-        if (!property_exists($obj, $property)) {
-            throw new InvalidArgumentException('Property does not exist: ' . $property);
-        }
-
-        return $obj->$property;
-    }
-
-    private function writeProperty(object $obj, string $property, mixed $value): void
-    {
-        if (!property_exists($obj, $property)) {
-            throw new InvalidArgumentException('Property does not exist: ' . $property);
-        }
-
-        $obj->$property = $value;
+        return PropertyAccessor::read($obj, $property);
     }
 
     private function writeLoadedRelation(EntityInterface $entity, string $property, mixed $value): void
     {
-        $this->writeProperty($entity, $property, $value);
+        PropertyAccessor::write($entity, $property, $value);
         $this->unitOfWork->markRelationLoaded($entity, $property);
     }
 
@@ -1511,7 +1413,7 @@ final class EntityManager implements EntityManagerContextInterface
      */
     private function readAnyProperty(object $obj, string $property): mixed
     {
-        return property_exists($obj, $property) ? $obj->$property : null;
+        return PropertyAccessor::has($obj, $property) ? PropertyAccessor::read($obj, $property) : null;
     }
 
     /**
@@ -1609,6 +1511,73 @@ final class EntityManager implements EntityManagerContextInterface
         return $changes;
     }
 
+    /**
+     * Колонки для UPDATE: отличающиеся от snapshot плюс добавленные/изменённые слушателями `OnUpdate`.
+     *
+     * Если snapshot нет (сущность не загружалась через ORM), уходят все колонки состояния.
+     *
+     * @param array<string, mixed> $original состояние до слушателей
+     * @param array<string, mixed> $current состояние после слушателей
+     * @return array<string, mixed>
+     */
+    private function updateChanges(EntityInterface $entity, array $original, array $current): array
+    {
+        $changed = $this->unitOfWork->changedFields($entity, $current);
+        if ($changed === null) {
+            return $current;
+        }
+
+        foreach ($this->stateChanges($original, $current) as $column => $value) {
+            $changed[$column] = $value;
+        }
+
+        return $changed;
+    }
+
+    /**
+     * Генерирует UUID для первичного ключа с `#[GeneratedValue(strategy: 'uuid')]`, если он ещё не задан.
+     */
+    private function assignGeneratedUuid(EntityInterface $entity): void
+    {
+        $meta = $this->metadata->for($entity::class);
+        if ($meta->idGenerationStrategy !== 'uuid' || count($meta->pkProperties) !== 1) {
+            return;
+        }
+
+        $pkProperty = $meta->pkProperties[0];
+        if (PropertyAccessor::read($entity, $pkProperty) !== null) {
+            return;
+        }
+
+        PropertyAccessor::write($entity, $pkProperty, $this->uuidValueFor($entity, $pkProperty));
+    }
+
+    /**
+     * UUID в виде, совместимом с типом свойства: объект UuidInterface или строка для `string`-свойства.
+     */
+    private function uuidValueFor(EntityInterface $entity, string $property): UuidInterface|string
+    {
+        $uuid = $this->uuidGenerator->generate();
+        $type = new ReflectionProperty($entity, $property)->getType();
+
+        $names = match (true) {
+            $type instanceof ReflectionNamedType => [$type->getName()],
+            $type instanceof ReflectionUnionType => array_map(
+                static fn (ReflectionType $item): string => $item instanceof ReflectionNamedType ? $item->getName() : '',
+                $type->getTypes(),
+            ),
+            default => ['mixed'],
+        };
+
+        foreach ($names as $name) {
+            if ($name === 'mixed' || $name === 'object' || is_a($uuid, $name)) {
+                return $uuid;
+            }
+        }
+
+        return in_array('string', $names, true) ? $uuid->toString() : $uuid;
+    }
+
     private function makeState(EntityInterface $entity): MutableEntityState
     {
         /** @var array<string, mixed> $data */
@@ -1679,39 +1648,83 @@ final class EntityManager implements EntityManagerContextInterface
         $this->unitOfWork->takeSnapshot($entity, $before);
     }
 
+    /**
+     * Порядок вызова обработчиков события сущности:
+     * 1) `#[Hook]` сущности;
+     * 2) `#[EventListener]` сущности (только для событий этой сущности);
+     * 3) глобальный dispatcher (`events`);
+     * 4) встроенные listeners ORM (Sluggable, Timestamps).
+     *
+     * Исключения обработчиков и ошибки создания listeners пробрасываются и откатывают транзакцию `flush()`.
+     */
     private function dispatch(EntityInterface $entity, EntityCommandInterface $event): void
     {
-        try {
-            $meta = $this->metadata->for($entity::class);
+        $meta = $this->metadataOrNull($entity::class);
 
-            foreach ($meta->eventListeners as $listenerClass) {
-                if (!isset($this->listenerInstances[$listenerClass])) {
-                    $this->listenerInstances[$listenerClass] = $this->listenerResolver->resolve($listenerClass);
-                    if ($this->events instanceof DefaultEventDispatcher) {
-                        $this->events->registerListenerObject($this->listenerInstances[$listenerClass]);
-                    }
-                }
-            }
-
-            // 2) entity hooks
+        if ($meta !== null) {
             foreach ($meta->hooks as $hook) {
                 if (!in_array($event::class, $hook->events, true)) {
                     continue;
                 }
 
                 $callable = $hook->callable;
-                if (is_callable($callable)) {
-                    $callable($event);
+                if (!is_callable($callable)) {
+                    throw new OrmException('Hook of entity ' . $entity::class . ' is not callable.');
                 }
+
+                $callable($event);
             }
-        } catch (Throwable) {
-            // метаданные/хуки не обязательны
+
+            $this->dispatchToEntityListeners($meta->eventListeners, $event);
         }
 
-        // 3) dispatch на зарегистрированные listener-объекты
+        $this->events->dispatch($event);
+
+        foreach ($this->builtInListeners as $listener) {
+            ListenerMethodResolver::invoke($listener, $event);
+        }
+    }
+
+    /**
+     * Bulk-события получают `#[EventListener]` сущности и глобальный dispatcher.
+     */
+    private function dispatchBulk(object $event): void
+    {
+        if ($event instanceof AbstractBulkWriteCommand || $event instanceof AbstractAfterBulkWriteCommand) {
+            $meta = $this->metadataOrNull($event->entityClass());
+            if ($meta !== null) {
+                $this->dispatchToEntityListeners($meta->eventListeners, $event);
+            }
+        }
+
         $this->events->dispatch($event);
     }
 
+    /**
+     * @param list<class-string> $listenerClasses
+     */
+    private function dispatchToEntityListeners(array $listenerClasses, object $event): void
+    {
+        foreach ($listenerClasses as $listenerClass) {
+            $listener = $this->listenerInstances[$listenerClass] ??= $this->listenerResolver->resolve($listenerClass);
+
+            ListenerMethodResolver::invoke($listener, $event);
+        }
+    }
+
+    /**
+     * Метаданные сущности или null, если класс не описан атрибутами (ошибка метаданных — не ошибка события).
+     *
+     * @param class-string $entityClass
+     */
+    private function metadataOrNull(string $entityClass): ?ClassMetadata
+    {
+        try {
+            return $this->metadata->for($entityClass);
+        } catch (InvalidArgumentException|ReflectionException) {
+            return null;
+        }
+    }
 
     /**
      * @param class-string $entityClass
@@ -1855,9 +1868,10 @@ final class EntityManager implements EntityManagerContextInterface
 
         // Переносим только mapped columns. Relation properties не копируем из временного объекта:
         // их loaded-state сбрасывается ниже, после чего они могут быть загружены заново.
+        // Инициализированные readonly-свойства (например, id) неизменяемы и не перезаписываются.
         foreach (array_keys($meta->columns) as $property) {
-            if (property_exists($entity, $property) && property_exists($hydrated, $property)) {
-                $entity->{$property} = $hydrated->{$property};
+            if (PropertyAccessor::has($entity, $property) && PropertyAccessor::has($hydrated, $property)) {
+                PropertyAccessor::write($entity, $property, PropertyAccessor::read($hydrated, $property));
             }
         }
 

@@ -14,6 +14,11 @@ interface EntityPersisterInterface
     public function insert(EntityInterface $entity, ?array $dataOverride = null): void;
 
     /**
+     * Обновляет запись.
+     *
+     * EntityManager передаёт в $dataOverride только изменённые колонки (отличающиеся от snapshot) и колонки,
+     * добавленные слушателями `OnUpdate`. Если $dataOverride = null, обновляются все колонки сущности.
+     *
      * @param array<string, mixed>|null $dataOverride
      */
     public function update(EntityInterface $entity, ?array $dataOverride = null): void;
