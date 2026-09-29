@@ -299,3 +299,9 @@ RepositoryClassFactory::class => static function (Container $c) {
 
 Отдельный гайд по работе с несколькими connection и registry:
 - [EntityManagerRegistry и multiple connections](08-entity-manager-registry.md)
+
+## Очистка EntityManager
+
+`clear()` забывает все отслеживаемые сущности и несохранённые изменения (очищает UnitOfWork). В долгоживущем
+процессе вызывайте его между задачами — это делает общий хук сброса (`ServicesResetter` из `phpsoftbox/container`,
+в скелете AppBackend он уже настроен), иначе identity map растёт и отдаёт устаревшие сущности.

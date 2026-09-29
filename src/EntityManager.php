@@ -214,6 +214,11 @@ final class EntityManager implements EntityManagerContextInterface
         return $this->unitOfWork;
     }
 
+    public function clear(): void
+    {
+        $this->unitOfWork->clear();
+    }
+
     /**
      * Регистрирует загруженные сущности как managed и фиксирует snapshot
      * для корректного dirty-checking/changelog diff.
