@@ -176,8 +176,7 @@ final class RefreshIntegrationTest extends TestCase
         // В реальном проекте это будет другая сущность/DTO, но нам важен контракт.
         $anonymous = new class ($post) implements EntityInterface {
             public function __construct(
-                private Post
-            $p,
+                private Post $p,
             ) {
             }
             public function id(): ?int

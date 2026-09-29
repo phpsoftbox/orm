@@ -23,8 +23,7 @@ use function is_scalar;
 final readonly class PivotRelationWriter
 {
     public function __construct(
-        private EntityManager
-    $em,
+        private EntityManager $em,
     ) {
     }
 

@@ -17,8 +17,7 @@ final class MetadataColumnPropertyMapper implements ColumnPropertyMapperInterfac
     private array $columnToPropertyCache = [];
 
     public function __construct(
-        private readonly MetadataProviderInterface
-    $metadata,
+        private readonly MetadataProviderInterface $metadata,
     ) {
     }
 
